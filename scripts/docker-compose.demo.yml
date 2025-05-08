@@ -44,6 +44,7 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/chaoschain
       - API_KEYS=demo_key,test_key
       - ETHEREUM_RPC_URL=http://hardhat:8545
+      - ENABLE_STREAM=1
       - LOG_LEVEL=INFO
     depends_on:
       postgres:

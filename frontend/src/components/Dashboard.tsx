@@ -3,6 +3,7 @@ import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
 import AttestationBadge from './AttestationBadge';
 import MetricsTable from './MetricsTable';
+import LiveFeed from './LiveFeed';
 
 interface Proposal {
   id: string;
@@ -162,30 +163,41 @@ demonstrated consistent improvements in both normal and high-demand scenarios.`,
   }
 
   return (
-    <div className="dashboard-container" style={{ maxWidth: '900px', margin: '0 auto', padding: '20px' }}>
-      <header style={{ marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1 style={{ fontSize: '24px', margin: '0' }}>{proposal.title}</h1>
-          <AttestationBadge attested={proposal.attested} />
+    <div className="dashboard-container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+      <div style={{ display: 'flex', gap: '20px' }}>
+        {/* Left column (35%) - Live Feed */}
+        <div style={{ width: '35%' }}>
+          <LiveFeed height="800px" />
         </div>
-        <p style={{ color: '#666', marginTop: '8px' }}>
-          {proposal.description}
-        </p>
-        <div style={{ fontSize: '14px', color: '#888', marginTop: '8px' }}>
-          Proposed: {formatDate(proposal.created_at)}
+        
+        {/* Right column (65%) - Proposal & Metrics */}
+        <div style={{ width: '65%' }}>
+          <header style={{ marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h1 style={{ fontSize: '24px', margin: '0' }}>{proposal.title}</h1>
+              <AttestationBadge attested={proposal.attested} />
+            </div>
+            <p style={{ color: '#666', marginTop: '8px' }}>
+              {proposal.description}
+            </p>
+            <div style={{ fontSize: '14px', color: '#888', marginTop: '8px' }}>
+              Proposed: {formatDate(proposal.created_at)}
+            </div>
+          </header>
+          
+          <div className="proposal-content" style={{ 
+            backgroundColor: '#fff', 
+            padding: '20px', 
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            marginBottom: '20px'
+          }}>
+            <ReactMarkdown>{proposal.content}</ReactMarkdown>
+          </div>
+          
+          <MetricsTable simulationId={proposal.simulation_id} />
         </div>
-      </header>
-      
-      <div className="proposal-content" style={{ 
-        backgroundColor: '#fff', 
-        padding: '20px', 
-        borderRadius: '8px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-      }}>
-        <ReactMarkdown>{proposal.content}</ReactMarkdown>
       </div>
-      
-      <MetricsTable simulationId={proposal.simulation_id} />
     </div>
   );
 };

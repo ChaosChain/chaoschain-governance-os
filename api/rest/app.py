@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 
 from utils import get_logger
 from api.models.database import engine, Base, get_db
-from api.rest.routers import proposals, simulation, attestation
+from api.rest.routers import proposals, simulation, attestation, stream
 
 # Create logger
 logger = get_logger("api", verbose="-v" in sys.argv or "--verbose" in sys.argv)
@@ -52,6 +52,7 @@ logger.info("Setting up API routes...")
 app.include_router(proposals.router)
 app.include_router(simulation.router)
 app.include_router(attestation.router)
+app.include_router(stream.router)
 
 # Mount the frontend static files
 logger.info("Mounting frontend static files...")
