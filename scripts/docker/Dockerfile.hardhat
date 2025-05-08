@@ -1,0 +1,21 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install dependencies
+COPY ethereum/package.json ethereum/package-lock.json* ethereum/hardhat.config.ts /app/
+RUN npm ci
+
+# Copy contract files
+COPY ethereum/contracts /app/contracts
+COPY ethereum/test /app/test
+
+# Expose Hardhat network port
+EXPOSE 8545
+
+# Create start script
+RUN echo '#!/bin/sh\nnpx hardhat node --fork ${FORK_URL} --fork-block-number ${FORK_BLOCK}' > /app/start.sh && \
+    chmod +x /app/start.sh
+
+# Start Hardhat network
+CMD ["/app/start.sh"] 

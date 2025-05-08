@@ -1,3 +1,5 @@
 """
-Agent tools for chain interaction and governance.
+Agent Tools Package
+
+This package contains tools for blockchain governance agents.
 """ 

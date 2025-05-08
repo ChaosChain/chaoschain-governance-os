@@ -40,6 +40,15 @@ flowchart LR
     C --> Chain[(Ethereum Testnet)]
 ```
 
+## Project Overview
+
+The ChaosChain Governance OS provides the following core capabilities:
+
+- **Cross-Chain Monitoring**: Monitor on-chain activity across various EVM-compatible chains
+- **AI-Powered Analysis**: Analyze blockchain data to identify potential governance improvements
+- **Governance Automation**: Generate and validate governance proposals using LLM-driven agents
+- **Multi-Chain Execution**: Submit validated proposals to different blockchains
+
 ## Architecture
 
 ChaosChain consists of several interconnected systems that work together to deliver AI-enhanced governance:
@@ -77,65 +86,114 @@ For detailed architecture documentation, see the [Implementation Plan](IMPLEMENT
 
 ### Prerequisites
 
-- Python 3.10+
-- Node.js 18+
-- Rust toolchain (stable)
-- [Optional] Intel SGX SDK for TEE development
+- Python 3.12+
+- Node.js 18+ and npm
+- Access to an Ethereum RPC endpoint
+- (Optional) GPU for AI model acceleration
 
 ### Installation
 
-1. **Clone the repository**:
+1. Clone the repository:
    ```bash
-   git clone https://github.com/YOUR_ORG/chaoschain-governance-os.git
+   git clone https://github.com/your-organization/chaoschain-governance-os.git
    cd chaoschain-governance-os
    ```
 
-2. **Create virtual environment** (recommended):
+2. Set up Python environment:
    ```bash
    python -m venv chaos
-   source chaos/bin/activate  # On Windows: chaos\Scripts\activate
+   source chaos/bin/activate  # On Windows, use: chaos\Scripts\activate
+   pip install -e .
    ```
 
-3. **Install Python dependencies**:
-   ```bash
-   pip install -e ".[dev]"
-   ```
-
-4. **Install Node.js dependencies**:
+3. Install Ethereum dependencies:
    ```bash
    npm install
    ```
 
-5. **Configure environment**:
+4. Set up environment variables:
    ```bash
-   cp env.example .env
-   # Edit .env with your configuration (API keys, RPC endpoints, etc.)
+   export ETHEREUM_RPC_URL=your_ethereum_rpc_url
+   export OPENAI_API_KEY=your_openai_api_key  # If using OpenAI models
    ```
 
-### Running Tests
+### Running the Application
+
+#### Demo
+
+The simplest way to see the system in action is to run the demo script:
 
 ```bash
-# Python tests
-pytest
+# Run with default settings
+python demo.py
 
-# Individual Python test file
-pytest tests/unit/agent/test_quick_demo.py -v
+# Run with verbose output
+python demo.py --verbose
+```
 
-# Node.js/Ethereum tests
-npx hardhat test
+The demo uses mock data to simulate blockchain analysis and governance proposal generation.
 
+#### Agent Testing
+
+```bash
+# Run unit tests
+pytest tests/unit/
+
+# Run the quick demo
+python -m agent.quick_demo
+```
+
+#### Smart Contract Testing
+
+```bash
 # Compile contracts
 npx hardhat compile
+
+# Run contract tests
+npx hardhat test
 ```
 
-### Running the Agent
+## Project Structure
 
-```bash
-# Basic demo
-python agent/runtime/demo.py --rpc https://sepolia.infura.io/v3/YOUR_INFURA_KEY
+```
+chaoschain-governance-os/
+├── agent/                   # AI agent implementation
+│   ├── governance_crew.py   # Main governance crew implementation
+│   ├── tools/               # Agent tools for blockchain interaction
+│   └── models/              # Data models
+├── ethereum/                # Ethereum smart contracts
+│   ├── contracts/           # Solidity contracts
+│   └── test/                # Contract tests
+├── api/                     # API service
+├── tests/                   # Test suite
+│   ├── unit/                # Unit tests
+│   └── integration/         # Integration tests
+├── demo.py                  # Demo script
+└── docs/                    # Documentation
 ```
 
+## Technology Stack
 
+- **Agent Framework**: CrewAI + LangChain
+- **Blockchain Interaction**: Web3.py, Hardhat
+- **AI Models**: Compatible with OpenAI, Anthropic Claude, and other providers
+- **Smart Contracts**: Solidity
+- **API**: FastAPI
+
+## Contributing
+
+Contributions are welcome! Please check out our [contribution guidelines](CONTRIBUTING.md) for details.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- [CrewAI](https://github.com/joaomdmoura/crewAI) - Agent collaboration framework
+- [LangChain](https://github.com/hwchase17/langchain) - LLM framework
+- [Web3.py](https://github.com/ethereum/web3.py) - Ethereum interface
+- [Hardhat](https://github.com/nomiclabs/hardhat) - Ethereum development environment
 
 ## 📚 Documentation
 
