@@ -217,3 +217,60 @@ Please ensure your code follows our style guidelines and includes appropriate te
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## Quick Start
+
+To run the demo with the UI dashboard:
+
+```bash
+# Clone the repository
+git clone https://github.com/ChaosChain/chaoschain-governance-os.git
+cd chaoschain-governance-os
+
+# Set up the environment (requires Python 3.10+, Node.js 18+)
+python -m venv chaos
+source chaos/bin/activate
+pip install -r requirements.txt
+
+# Run the end-to-end demo
+./scripts/demo_e2e.sh   # then open http://localhost:8080/ui
+```
+
+## Overview
+
+ChaosChain is a cross-chain agentic governance operating system designed to enhance blockchain governance through AI-driven agents. Unlike traditional blockchain projects that operate as L1/L2 networks, ChaosChain functions as a governance-as-a-service platform that integrates with existing blockchains to augment their governance and core development processes.
+
+### Core Value Proposition
+
+- Accelerate blockchain evolution through AI-assisted governance and development
+- Enable cross-chain knowledge sharing and improvement propagation
+- Provide rigorous simulation-based validation for protocol changes with full verifiability
+- Lower the barrier to quality governance for blockchain ecosystems of any size
+
+## Architecture
+
+ChaosChain is composed of several interconnected systems:
+
+- **Agent Runtime**: CrewAI-based agents that analyze blockchain data and generate proposals
+- **Simulation Environment**: Forked chain testing for proposals with metrics collection
+- **Verification Layer**: Transparency and audit mechanisms with result verification
+- **Blockchain Clients**: Chain-specific adapters for multiple blockchains
+- **API Layer**: FastAPI service for interacting with the system
+
+## Development
+
+This repository contains the implementation of ChaosChain Governance OS. See the [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for details on the project structure and roadmap.
+
+### Running Tests
+
+```bash
+# Run all tests
+pytest
+
+# Run specific test module
+pytest tests/unit/agent/test_governance_agents.py
+```
+
+## License
+
+[MIT License](LICENSE)
+
