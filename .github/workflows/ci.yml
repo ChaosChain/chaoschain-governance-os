@@ -2,7 +2,7 @@ name: ChaosChain CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, governance-adaptation ]
   pull_request:
     branches: [ main ]
 
@@ -102,6 +102,41 @@ jobs:
           pytest
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/chaoschain_test
+  
+  governance-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run unit tests
+        run: |
+          pytest tests/unit/agent/test_governance_agents_adapted.py -v
+      
+      - name: Run integration tests
+        run: |
+          pytest tests/integration/test_secure_simulation_poa.py -v
+      
+      - name: Run demo script
+        run: |
+          python demo_governance_flow.py --output governance_flow_result.json
+      
+      - name: Upload demo result
+        uses: actions/upload-artifact@v4
+        with:
+          name: governance-flow-result
+          path: governance_flow_result.json
   
   build-frontend:
     runs-on: ubuntu-latest
