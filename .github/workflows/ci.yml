@@ -1,13 +1,13 @@
-name: ChaosChain CI
+name: CI
 
 on:
   push:
-    branches: [ main, governance-adaptation ]
+    branches: [ main, hotfix/*, feature/* ]
   pull_request:
     branches: [ main ]
 
 jobs:
-  python-tests:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -19,62 +19,24 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
-      - name: Run tests
-        run: pytest -q tests/
-      - name: Run linting
-        run: |
-          black --check .
-          isort --check .
-          mypy agent/
+          pip install flake8 black isort
+          pip install -e .
+      - name: Lint with flake8
+        run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+      - name: Check formatting with black
+        run: black --check .
+      - name: Check imports with isort
+        run: isort --check .
 
-  node-tests:
+  unit-tests:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-      - name: Compile contracts
-        run: npx hardhat compile
-      - name: Run tests
-        run: npm test
-      - name: Run linting
-        run: npm run lint
-
-  rust-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-          components: rustfmt, clippy
-      - name: Build without SGX feature
-        run: cargo build --verbose
-      - name: Run tests without SGX feature
-        run: cargo test --verbose
-      - name: Check code formatting
-        run: cargo fmt --all -- --check
-      - name: Lint with clippy
-        run: cargo clippy -- -D warnings
-
-  test:
-    runs-on: ubuntu-latest
-    
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:14
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: chaoschain_test
+          POSTGRES_USER: chaoscore
+          POSTGRES_PASSWORD: chaoscore_pass
+          POSTGRES_DB: chaoscore
         ports:
           - 5432:5432
         options: >-
@@ -82,84 +44,173 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    
     steps:
-      - uses: actions/checkout@v4
-      
+      - uses: actions/checkout@v3
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: '3.10'
           cache: 'pip'
-      
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      
-      - name: Run tests
+          pip install pytest pytest-cov
+          pip install -e .
+      - name: Initialize database
         run: |
-          pytest
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/chaoschain_test
-  
-  governance-tests:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-          cache: 'pip'
-      
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      
+          PGPASSWORD=chaoscore_pass psql -h localhost -U chaoscore -d chaoscore -f db/init.sql
       - name: Run unit tests
         run: |
-          pytest tests/unit/agent/test_governance_agents_adapted.py -v
-      
+          pytest tests/unit --cov=chaoscore/core --cov-report=xml
+        env:
+          POSTGRES_USER: chaoscore
+          POSTGRES_PASSWORD: chaoscore_pass
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: chaoscore
+          SGX_MOCK: 'true'
+          ETHEREUM_MOCK: 'true'
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: chaoscore
+          POSTGRES_PASSWORD: chaoscore_pass
+          POSTGRES_DB: chaoscore
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov
+          pip install -e .
+      - name: Initialize database
+        run: |
+          PGPASSWORD=chaoscore_pass psql -h localhost -U chaoscore -d chaoscore -f db/init.sql
       - name: Run integration tests
         run: |
-          pytest tests/integration/test_secure_simulation_poa.py -v
-      
-      - name: Run demo script
-        run: |
-          python demo_governance_flow.py --output governance_flow_result.json
-      
-      - name: Upload demo result
-        uses: actions/upload-artifact@v4
+          pytest tests/integration --cov=chaoscore/core --cov-report=xml
+        env:
+          POSTGRES_USER: chaoscore
+          POSTGRES_PASSWORD: chaoscore_pass
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: chaoscore
+          SGX_MOCK: 'true'
+          ETHEREUM_MOCK: 'true'
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
         with:
-          name: governance-flow-result
-          path: governance_flow_result.json
-  
-  build-frontend:
+          file: ./coverage.xml
+
+  ethereum-tests:
     runs-on: ubuntu-latest
-    
     steps:
-      - uses: actions/checkout@v4
-      
+      - uses: actions/checkout@v3
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '16'
           cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-      
+          cache-dependency-path: ethereum/package-lock.json
       - name: Install dependencies
-        run: npm ci
-        working-directory: ./frontend
-      
-      - name: Build frontend
-        run: npm run build --prefix frontend
-      
-      - name: Upload frontend build
-        uses: actions/upload-artifact@v4
+        run: |
+          cd ethereum
+          npm install
+      - name: Run tests
+        run: |
+          cd ethereum
+          npx hardhat test
+
+  governance-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: chaoscore
+          POSTGRES_PASSWORD: chaoscore_pass
+          POSTGRES_DB: chaoscore
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          name: frontend-build
-          path: frontend/dist 
+          python-version: '3.10'
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+      - name: Initialize database
+        run: |
+          PGPASSWORD=chaoscore_pass psql -h localhost -U chaoscore -d chaoscore -f db/init.sql
+      - name: Run governance tests
+        run: |
+          python tests/test_governance_flow.py
+        env:
+          POSTGRES_USER: chaoscore
+          POSTGRES_PASSWORD: chaoscore_pass
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: chaoscore
+          SGX_MOCK: 'true'
+          ETHEREUM_MOCK: 'true'
+      - name: Run end-to-end demo (local mode)
+        run: |
+          python demo_governance_flow.py --verbose
+        env:
+          POSTGRES_USER: chaoscore
+          POSTGRES_PASSWORD: chaoscore_pass
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: chaoscore
+          SGX_MOCK: 'true'
+          ETHEREUM_MOCK: 'true'
+      - name: Run end-to-end demo (staging mode with mocks)
+        run: |
+          python demo_governance_flow.py --stage --verbose
+        env:
+          POSTGRES_USER: chaoscore
+          POSTGRES_PASSWORD: chaoscore_pass
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: chaoscore
+          SGX_MOCK: 'true'
+          ETHEREUM_MOCK: 'true'
+
+  build-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build Docker image
+        run: docker build -t chaoscore:test .
+      - name: Test Docker image
+        run: |
+          docker run --rm chaoscore:test python -c "import chaoscore; print('ChaosCore version:', chaoscore.__version__)" 

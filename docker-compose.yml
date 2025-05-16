@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  # Core services
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - sgx-dev
+    environment:
+      - CHAOSCORE_ENV=staging
+      - POSTGRES_USER=chaoscore
+      - POSTGRES_PASSWORD=chaoscore_pass
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=chaoscore
+      - SGX_ENCLAVE_URL=http://sgx-dev:7000
+      - ETHEREUM_PROVIDER_URL=${ETHEREUM_PROVIDER_URL:-https://goerli.infura.io/v3/your-api-key}
+      - ETHEREUM_CONTRACT_ADDRESS=${ETHEREUM_CONTRACT_ADDRESS:-0x1234567890123456789012345678901234567890}
+      - METRICS_ENABLED=true
+    volumes:
+      - ./:/app
+    networks:
+      - chaoscore-network
+
+  # Persistence
+  postgres:
+    image: postgres:14
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=chaoscore
+      - POSTGRES_PASSWORD=chaoscore_pass
+      - POSTGRES_DB=chaoscore
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - chaoscore-network
+
+  # Secure Execution
+  sgx-dev:
+    image: chaoschain/sgx-dev:latest
+    ports:
+      - "7000:7000"
+    privileged: true
+    volumes:
+      - sgx-data:/var/lib/sgx
+    networks:
+      - chaoscore-network
+
+  # Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./deployments/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - chaoscore-network
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./deployments/grafana/provisioning:/etc/grafana/provisioning
+      - ./deployments/grafana/dashboard.json:/var/lib/grafana/dashboards/chaoscore.json
+    depends_on:
+      - prometheus
+    networks:
+      - chaoscore-network
+
+volumes:
+  postgres-data:
+  sgx-data:
+
+networks:
+  chaoscore-network:
+    driver: bridge 

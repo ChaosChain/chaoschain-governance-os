@@ -20,6 +20,16 @@ from chaoscore.core.reputation import InMemoryReputationSystem
 from chaoscore.core.studio import InMemoryStudioManager
 from chaoscore.core.ethereum import EthereumClient
 
+# Import PostgreSQL implementations for staging
+from chaoscore.core.database_adapter import (
+    PostgreSQLAdapter,
+    PostgreSQLAgentRegistry,
+    PostgreSQLProofOfAgency,
+    PostgreSQLReputationSystem
+)
+# Import SGX implementation for staging
+from chaoscore.core.secure_execution_sgx import SGXSecureExecutionEnvironment
+
 from adapters import (
     AgentRegistryAdapter,
     ProofOfAgencyAdapter,
@@ -32,22 +42,51 @@ from agent.agents.governance_agents_adapted import AdaptedGovernanceAgents
 from simulation.secure_simulation import SecureSimulation
 
 
-def create_adapters(use_ethereum=False):
+def create_adapters(use_ethereum=False, use_staging=False):
     """
     Create the ChaosCore adapters.
     
     Args:
         use_ethereum: Whether to use Ethereum for anchoring
+        use_staging: Use staging environment
         
     Returns:
         Dictionary of adapters
     """
-    # Create the core components
-    agent_registry = InMemoryAgentRegistry()
-    proof_of_agency = InMemoryProofOfAgency()
-    secure_execution = InMemorySecureExecution()
-    reputation_system = InMemoryReputationSystem()
-    studio_manager = InMemoryStudioManager()
+    # Create or connect to the core components
+    if use_staging:
+        print("Connecting to staging environment...")
+        # In a staging environment, we connect to actual services
+        # PostgreSQL for storage
+        db = PostgreSQLAdapter()
+        agent_registry = PostgreSQLAgentRegistry(db)
+        proof_of_agency = PostgreSQLProofOfAgency(db)
+        
+        # SGX for secure execution
+        sgx_url = os.environ.get("SGX_ENCLAVE_URL", "http://localhost:7000")
+        print(f"Connecting to SGX enclave at {sgx_url}...")
+        secure_execution = SGXSecureExecutionEnvironment(sgx_url)
+        try:
+            # Get enclave info
+            enclave_info = secure_execution.get_enclave_info()
+            print(f"Connected to SGX enclave with hash: {enclave_info.get('enclave_hash', 'unknown')}")
+        except Exception as e:
+            print(f"WARNING: Could not connect to SGX enclave: {e}")
+            print("Falling back to in-memory secure execution")
+            secure_execution = InMemorySecureExecution()
+        
+        reputation_system = PostgreSQLReputationSystem(db)
+        studio_manager = InMemoryStudioManager()  # No PostgreSQL implementation yet
+        
+        # Automatically use Ethereum for anchoring in staging
+        use_ethereum = True
+    else:
+        # Create local in-memory components for testing
+        agent_registry = InMemoryAgentRegistry()
+        proof_of_agency = InMemoryProofOfAgency()
+        secure_execution = InMemorySecureExecution()
+        reputation_system = InMemoryReputationSystem()
+        studio_manager = InMemoryStudioManager()
     
     # Create the adapters
     adapters = {
@@ -60,10 +99,22 @@ def create_adapters(use_ethereum=False):
     
     # Initialize Ethereum client if needed
     if use_ethereum:
-        # In a real implementation, use the actual contract address and provider
+        # Determine the contract address and provider URL
+        if use_staging:
+            # Use the staging contract address
+            contract_address = os.environ.get("ETHEREUM_CONTRACT_ADDRESS", "0x1234567890123456789012345678901234567890")
+            provider_url = os.environ.get("ETHEREUM_PROVIDER_URL", "https://goerli.infura.io/v3/your-api-key")
+            print(f"Using Ethereum anchoring with provider: {provider_url}")
+            print(f"Contract address: {contract_address}")
+        else:
+            # Use a local development contract address
+            contract_address = "0x1234567890123456789012345678901234567890"
+            provider_url = os.environ.get("ETHEREUM_PROVIDER_URL", "http://localhost:8545")
+        
+        # Create the Ethereum client
         ethereum_client = EthereumClient(
-            contract_address="0x1234567890123456789012345678901234567890",
-            provider_url=os.environ.get("ETHEREUM_PROVIDER_URL", "http://localhost:8545")
+            contract_address=contract_address,
+            provider_url=provider_url
         )
         
         # Connect with the proof of agency adapter
@@ -72,22 +123,25 @@ def create_adapters(use_ethereum=False):
     return adapters
 
 
-def run_governance_flow(use_ethereum=False, verbose=False):
+def run_governance_flow(use_ethereum=False, verbose=False, use_staging=False):
     """
     Run the governance flow demo.
     
     Args:
         use_ethereum: Whether to use Ethereum for anchoring
         verbose: Enable verbose output
+        use_staging: Use staging environment
         
     Returns:
         Dictionary with results of the flow
     """
     print("Starting governance flow demo...")
     print(f"Using Ethereum for anchoring: {use_ethereum}")
+    if use_staging:
+        print(f"Using staging environment")
     
     # Create adapters
-    adapters = create_adapters(use_ethereum)
+    adapters = create_adapters(use_ethereum=use_ethereum, use_staging=use_staging)
     
     # Create the governance agents
     print("\nCreating and registering governance agents...")
@@ -124,6 +178,12 @@ def run_governance_flow(use_ethereum=False, verbose=False):
     # Print attestation
     print("\nAttestation:")
     print(f"  Hash: {result['attestation']['hash']}")
+    if 'enclave_hash' in result['attestation']:
+        print(f"  Enclave Hash: {result['attestation']['enclave_hash']}")
+    
+    # Print transaction hash if available
+    if 'tx_hash' in result:
+        print(f"\nTransaction Hash: {result['tx_hash']}")
     
     # Print reputation changes
     if "reputation" in result and result["reputation"]:
@@ -170,12 +230,21 @@ def main():
     """Main function to run the demo."""
     parser = argparse.ArgumentParser(description="Demo of the governance flow using ChaosCore")
     parser.add_argument("--ethereum", action="store_true", help="Use Ethereum for anchoring")
+    parser.add_argument("--stage", action="store_true", help="Use staging environment")
+    parser.add_argument("--anchor-eth", action="store_true", help="Anchor on Ethereum (requires provider URL)")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     parser.add_argument("--output", default="governance_flow_result.json", help="Output file for the result")
     args = parser.parse_args()
     
+    # For backward compatibility, if ethereum is specified, also set anchor-eth
+    use_ethereum = args.ethereum or args.anchor_eth
+    
+    # In staging, Ethereum anchoring is enabled by default
+    if args.stage and not use_ethereum:
+        print("Note: Ethereum anchoring is enabled by default in staging environment")
+    
     try:
-        result = run_governance_flow(use_ethereum=args.ethereum, verbose=args.verbose)
+        result = run_governance_flow(use_ethereum=use_ethereum, verbose=args.verbose, use_staging=args.stage)
         save_result(result, args.output)
         return 0
     except Exception as e:

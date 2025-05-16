@@ -217,60 +217,153 @@ Please ensure your code follows our style guidelines and includes appropriate te
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Quick Start
-
-To run the demo with the UI dashboard:
-
-```bash
-# Clone the repository
-git clone https://github.com/ChaosChain/chaoschain-governance-os.git
-cd chaoschain-governance-os
-
-# Set up the environment (requires Python 3.10+, Node.js 18+)
-python -m venv chaos
-source chaos/bin/activate
-pip install -r requirements.txt
-
-# Run the end-to-end demo
-./scripts/demo_e2e.sh   # then open http://localhost:8080/ui
-```
-
 ## Overview
 
-ChaosChain is a cross-chain agentic governance operating system designed to enhance blockchain governance through AI-driven agents. Unlike traditional blockchain projects that operate as L1/L2 networks, ChaosChain functions as a governance-as-a-service platform that integrates with existing blockchains to augment their governance and core development processes.
+The ChaosChain Governance OS is a governance platform that combines AI agents, secure execution, and blockchain anchoring to create transparent, verifiable governance systems. This project is built on the ChaosCore platform.
 
-### Core Value Proposition
+## Components
 
-- Accelerate blockchain evolution through AI-assisted governance and development
-- Enable cross-chain knowledge sharing and improvement propagation
-- Provide rigorous simulation-based validation for protocol changes with full verifiability
-- Lower the barrier to quality governance for blockchain ecosystems of any size
+- **Agent Registry**: Register and verify governance agents
+- **Proof of Agency**: Log and verify agent actions
+- **Secure Execution Environment**: Run code in a verifiable, isolated environment
+- **Reputation System**: Track agent performance
+- **Studio Framework**: Organize agents into governance crews
+
+## Setup and Installation
+
+### Prerequisites
+
+- Python 3.10+
+- Docker and Docker Compose
+- Node.js 16+ (for Ethereum development)
+
+### Local Development Setup
+
+1. Clone the repository:
+```bash
+git clone https://github.com/chaoschain/chaoschain-governance-os.git
+cd chaoschain-governance-os
+```
+
+2. Install dependencies:
+```bash
+pip install -e .
+```
+
+3. Run the demo:
+```bash
+python demo_governance_flow.py
+```
+
+### Staging Environment
+
+The staging environment is a production-like environment used for testing. It includes:
+
+- PostgreSQL for persistent storage
+- SGX dev-container for secure execution
+- Goerli testnet for blockchain anchoring
+- Prometheus and Grafana for monitoring
+
+#### Setting Up Staging
+
+1. Start the staging environment:
+```bash
+docker-compose up -d
+```
+
+2. The following services will be available:
+   - ChaosCore API: http://localhost:8000
+   - PostgreSQL: localhost:5432
+   - SGX Enclave: http://localhost:7000
+   - Prometheus: http://localhost:9090
+   - Grafana: http://localhost:3000 (username: admin, password: admin)
+
+3. Environment variables for connecting to services:
+```
+# PostgreSQL
+POSTGRES_USER=chaoscore
+POSTGRES_PASSWORD=chaoscore_pass
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=chaoscore
+
+# SGX Enclave
+SGX_ENCLAVE_URL=http://localhost:7000
+
+# Ethereum (Goerli)
+ETHEREUM_PROVIDER_URL=https://goerli.infura.io/v3/your-api-key
+ETHEREUM_CONTRACT_ADDRESS=0x1234567890123456789012345678901234567890
+```
+
+4. Run the demo in staging mode:
+```bash
+python demo_governance_flow.py --stage
+```
+
+## Testing
+
+### Run Tests
+```bash
+pytest tests/
+```
+
+### Run Linting
+```bash
+black .
+isort .
+flake8 .
+```
+
+## SDK
+
+The ChaosCore SDK can be used to interact with the platform:
+
+```python
+from chaoscore.sdk.python import ChaosCoreClient
+
+# Create a client
+client = ChaosCoreClient()
+
+# Register an agent
+agent_id = client.register_agent(
+    name="Parameter Optimizer",
+    email="optimizer@example.com",
+    metadata={"role": "developer"}
+)
+
+# Log an action
+action_id = client.log_action(
+    agent_id=agent_id,
+    action_type="OPTIMIZE",
+    description="Optimize gas parameters"
+)
+```
+
+## Monitoring
+
+The platform includes monitoring tools to track system metrics:
+
+- **Prometheus**: Collects metrics at http://localhost:9090
+- **Grafana**: Visualizes metrics at http://localhost:3000
+
+The dashboard visualizes:
+- Agent count
+- Action count
+- Simulation count
+- Anchoring operations
+- API performance
 
 ## Architecture
 
-ChaosChain is composed of several interconnected systems:
+The ChaosChain Governance OS is built on the ChaosCore platform, which provides core infrastructure for governance operations:
 
-- **Agent Runtime**: CrewAI-based agents that analyze blockchain data and generate proposals
-- **Simulation Environment**: Forked chain testing for proposals with metrics collection
-- **Verification Layer**: Transparency and audit mechanisms with result verification
-- **Blockchain Clients**: Chain-specific adapters for multiple blockchains
-- **API Layer**: FastAPI service for interacting with the system
-
-## Development
-
-This repository contains the implementation of ChaosChain Governance OS. See the [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for details on the project structure and roadmap.
-
-### Running Tests
-
-```bash
-# Run all tests
-pytest
-
-# Run specific test module
-pytest tests/unit/agent/test_governance_agents.py
-```
+1. Agents are registered in the Agent Registry
+2. Agent actions are logged through Proof of Agency
+3. Simulations run in the Secure Execution Environment
+4. Results are anchored to Ethereum
+5. Agent reputation is updated based on outcomes
 
 ## License
 
-[MIT License](LICENSE)
+MIT
 

@@ -3,7 +3,7 @@
 ChaosChain Quick Governance Demo
 
 This script runs a simplified demo of the ChaosChain governance system
-using a deterministic dataset without external API dependencies.
+using either deterministic mock data or live chain data.
 """
 
 import os
@@ -46,6 +46,17 @@ def parse_args():
         help="Output file for results (JSON)", 
         default=""
     )
+    parser.add_argument(
+        "--use-real-data",
+        action="store_true",
+        help="Use real chain data instead of mock data"
+    )
+    parser.add_argument(
+        "--eth-rpc-url",
+        type=str,
+        help="Ethereum JSON-RPC URL (defaults to ETH_RPC_URL env var or Sepolia)",
+        default=None
+    )
     return parser.parse_args()
 
 def main():
@@ -56,21 +67,39 @@ def main():
     # Parse command line arguments
     args = parse_args()
     
+    # Set ETH_RPC_URL environment variable if provided
+    if args.eth_rpc_url:
+        os.environ["ETH_RPC_URL"] = args.eth_rpc_url
+    
     logger.info("Starting ChaosChain Quick Governance Demo")
     
-    # Create and run the governance demo with fixed implementation
-    demo = QuickDemo(llm=args.model, verbose=args.verbose)
+    # Create and run the governance demo
+    demo = QuickDemo(
+        llm=args.model, 
+        verbose=args.verbose,
+        use_real_data=args.use_real_data
+    )
     
     try:
         logger.info("Running governance workflow...")
+        
+        if args.use_real_data:
+            logger.info("Using real chain data from Ethereum network")
+        else:
+            logger.info("Using mock data for demonstration")
+            
         results = demo.run()
         
         # Print results
         logger.info("Governance workflow completed:")
-        logger.info("Analysis Summary:")
-        print(results["analysis"])
-        logger.info("\nProposal Summary:")
-        print(results["proposal"])
+        
+        if "analysis" in results:
+            logger.info("Analysis Summary:")
+            print(results["analysis"])
+        
+        if "proposal" in results:
+            logger.info("\nProposal Summary:")
+            print(results["proposal"])
         
         # Save results to file if requested
         if args.output:
@@ -82,6 +111,8 @@ def main():
         
     except Exception as e:
         logger.error(f"Error running governance workflow: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
 
 if __name__ == "__main__":

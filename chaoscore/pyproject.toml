@@ -1,0 +1,83 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chaoscore"
+description = "Core components for the ChaosCore AI agent governance platform"
+readme = "README.md"
+authors = [
+    {name = "ChaosCore Team", email = "info@chaoscore.ai"}
+]
+requires-python = ">=3.10"
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+]
+dynamic = ["version"]
+dependencies = [
+    "pydantic>=2.5.0",
+    "cryptography>=41.0.0",  # For cryptographic operations
+    "python-dateutil>=2.8.2",
+    "pyjwt>=2.8.0",  # For JWT-based authentication
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=23.11.0",
+    "isort>=5.12.0",
+    "mypy>=1.7.0",
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "eth-tester>=0.9.1",  # For Ethereum testing
+    "pytest-mock>=3.12.0",
+]
+ethereum = [
+    "web3>=6.10.0",  # For Ethereum integration
+]
+all = [
+    "web3>=6.10.0",
+]
+
+[project.scripts]
+chaoscore = "chaoscore.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["chaoscore*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "chaoscore.__version__"}
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_functions = "test_*"
+python_classes = "Test*"
+addopts = "--cov=chaoscore --cov-report=term --cov-report=html" 
