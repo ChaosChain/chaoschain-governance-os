@@ -5,7 +5,7 @@ This document summarizes the work completed during Sprint 4, which focused on ad
 ## Completed Work
 
 1. **Adapter Layer Implementation**
-   - Created a thin adapter layer in `adapters/` that connects to ChaosCore core components
+   - Created a thin adapter layer in `chaoschain-governance-os/adapters/` that connects to ChaosCore core components
    - Implemented adapters for:
      - Agent Registry
      - Proof of Agency

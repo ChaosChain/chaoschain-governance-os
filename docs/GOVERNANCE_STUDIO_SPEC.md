@@ -1,4 +1,4 @@
-# Governance Studio Technical Specification
+ # Governance Studio Technical Specification
 
 ## Overview
 

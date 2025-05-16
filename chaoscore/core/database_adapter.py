@@ -1,509 +1,396 @@
 """
-Database Adapter for ChaosCore
+Database Adapter Interfaces
 
-This module provides a PostgreSQL adapter for the ChaosCore components.
+This module provides interfaces for database adapters used by the ChaosCore platform.
+For demonstration purposes in the API Gateway integration tests.
 """
-import os
+
 import logging
-from typing import Dict, Any, Optional, List
-import psycopg2
-from psycopg2.extras import RealDictCursor
+import uuid
+from datetime import datetime
+from typing import Dict, List, Any, Optional
 
-logger = logging.getLogger(__name__)
-
-
-class PostgreSQLAdapter:
-    """
-    PostgreSQL adapter for ChaosCore components.
-    """
-    
-    def __init__(self, connection_params=None):
-        """
-        Initialize the PostgreSQL adapter.
-        
-        Args:
-            connection_params: Optional connection parameters
-        """
-        self.connection_params = connection_params or {
-            'user': os.environ.get('POSTGRES_USER', 'chaoscore'),
-            'password': os.environ.get('POSTGRES_PASSWORD', 'chaoscore_pass'),
-            'host': os.environ.get('POSTGRES_HOST', 'localhost'),
-            'port': os.environ.get('POSTGRES_PORT', '5432'),
-            'database': os.environ.get('POSTGRES_DB', 'chaoscore')
-        }
-        self.conn = None
+class BaseAdapter:
+    """Base adapter interface."""
     
     def connect(self):
-        """
-        Connect to the PostgreSQL database.
-        
-        Returns:
-            Connection object
-        """
-        if self.conn is None or self.conn.closed:
-            try:
-                self.conn = psycopg2.connect(**self.connection_params)
-                logger.info("Connected to PostgreSQL database")
-            except psycopg2.Error as e:
-                logger.error(f"Error connecting to PostgreSQL: {e}")
-                raise
-        return self.conn
-    
-    def execute(self, query, params=None, fetch=None):
-        """
-        Execute a SQL query.
-        
-        Args:
-            query: SQL query
-            params: Query parameters
-            fetch: 'one', 'all', or None for no fetch
-            
-        Returns:
-            Query result or None
-        """
-        conn = self.connect()
-        try:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute(query, params or {})
-                
-                if fetch == 'one':
-                    result = cur.fetchone()
-                elif fetch == 'all':
-                    result = cur.fetchall()
-                else:
-                    result = None
-                
-                conn.commit()
-                return result
-        except psycopg2.Error as e:
-            conn.rollback()
-            logger.error(f"Database error: {e}")
-            raise
-    
-    def close(self):
-        """
-        Close the database connection.
-        """
-        if self.conn and not self.conn.closed:
-            self.conn.close()
-            logger.info("Closed PostgreSQL connection")
-    
-    def __enter__(self):
-        """
-        Context manager entry.
-        
-        Returns:
-            self
-        """
-        self.connect()
-        return self
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """
-        Context manager exit.
-        
-        Args:
-            exc_type: Exception type
-            exc_val: Exception value
-            exc_tb: Exception traceback
-        """
-        self.close()
+        """Connect to the database."""
+        raise NotImplementedError
 
-
-class PostgreSQLAgentRegistry:
+class PostgreSQLAdapter(BaseAdapter):
     """
-    PostgreSQL implementation of the Agent Registry.
+    PostgreSQL adapter for the ChaosCore platform.
+    
+    This is a mock implementation for demonstration purposes.
     """
     
-    def __init__(self, db=None):
-        """
-        Initialize the PostgreSQL Agent Registry.
-        
-        Args:
-            db: Optional database adapter
-        """
-        self.db = db or PostgreSQLAdapter()
+    def __init__(self):
+        """Initialize the PostgreSQL adapter."""
+        self.agents = {}
+        self.actions = {}
+        self.outcomes = {}
+        self.studios = {}
+        self.tasks = {}
+        self.reputation = {}
+    
+    def connect(self):
+        """Connect to the PostgreSQL database."""
+        logging.info("Connected to PostgreSQL database")
+        return True
+    
+    # --- Agent Registry Methods ---
     
     def register_agent(self, name, email, metadata=None):
-        """
-        Register a new agent.
+        """Register a new agent."""
+        agent_id = f"agent-{uuid.uuid4()}"
+        registration_time = datetime.now()
         
-        Args:
-            name: Agent name
-            email: Agent email
-            metadata: Optional agent metadata
-            
-        Returns:
-            Agent ID
-        """
-        from uuid import uuid4
-        
-        # Generate ID
-        agent_id = f"agent-{uuid4()}"
-        
-        # Insert agent
-        self.db.execute(
-            "INSERT INTO agents (id, name, email) VALUES (%(id)s, %(name)s, %(email)s)",
-            {'id': agent_id, 'name': name, 'email': email}
-        )
-        
-        # Insert metadata
-        if metadata:
-            for key, value in metadata.items():
-                self.db.execute(
-                    "INSERT INTO agent_metadata (agent_id, key, value) VALUES (%(agent_id)s, %(key)s, %(value)s)",
-                    {'agent_id': agent_id, 'key': key, 'value': str(value)}
-                )
-        
-        # Update metrics
-        self.db.execute(
-            "UPDATE metrics SET value = value + 1 WHERE name = 'agent_count'"
-        )
+        self.agents[agent_id] = {
+            "id": agent_id,
+            "name": name,
+            "email": email,
+            "metadata": metadata or {},
+            "registration_time": registration_time
+        }
         
         return agent_id
     
     def get_agent(self, agent_id):
-        """
-        Get agent information.
-        
-        Args:
-            agent_id: Agent ID
-            
-        Returns:
-            Agent object or None
-        """
-        # Get agent
-        agent = self.db.execute(
-            "SELECT * FROM agents WHERE id = %(id)s",
-            {'id': agent_id},
-            fetch='one'
-        )
-        
-        if not agent:
+        """Get agent by ID."""
+        if agent_id not in self.agents:
             return None
         
-        # Get metadata
-        metadata_rows = self.db.execute(
-            "SELECT key, value FROM agent_metadata WHERE agent_id = %(agent_id)s",
-            {'agent_id': agent_id},
-            fetch='all'
-        )
+        agent_data = self.agents[agent_id]
         
-        metadata = {row['key']: row['value'] for row in (metadata_rows or [])}
-        
-        # Create agent object
-        from chaoscore.core.agent_registry import Agent
-        return Agent(
-            agent_id=agent['id'],
-            name=agent['name'],
-            email=agent['email'],
-            metadata=metadata
-        )
-    
-    def list_agents(self, limit=100, offset=0):
-        """
-        List agents.
-        
-        Args:
-            limit: Maximum number of agents to return
-            offset: Offset for pagination
+        class Agent:
+            def __init__(self, data):
+                self.data = data
             
-        Returns:
-            List of agents
-        """
-        # Get agents
-        agents = self.db.execute(
-            "SELECT * FROM agents ORDER BY created_at DESC LIMIT %(limit)s OFFSET %(offset)s",
-            {'limit': limit, 'offset': offset},
-            fetch='all'
-        )
+            def get_id(self):
+                return self.data["id"]
+            
+            def get_name(self):
+                return self.data["name"]
+            
+            def get_email(self):
+                return self.data["email"]
+            
+            def get_metadata(self):
+                return self.data["metadata"]
+            
+            def get_registration_time(self):
+                return self.data["registration_time"]
+        
+        return Agent(agent_data)
+    
+    def list_agents(self, limit=10, offset=0):
+        """List agents with pagination."""
+        agent_list = list(self.agents.values())[offset:offset+limit]
         
         result = []
-        for agent in agents:
-            # Get metadata
-            metadata_rows = self.db.execute(
-                "SELECT key, value FROM agent_metadata WHERE agent_id = %(agent_id)s",
-                {'agent_id': agent['id']},
-                fetch='all'
-            )
+        for agent_data in agent_list:
+            class Agent:
+                def __init__(self, data):
+                    self.data = data
+                
+                def get_id(self):
+                    return self.data["id"]
+                
+                def get_name(self):
+                    return self.data["name"]
+                
+                def get_email(self):
+                    return self.data["email"]
+                
+                def get_metadata(self):
+                    return self.data["metadata"]
+                
+                def get_registration_time(self):
+                    return self.data["registration_time"]
             
-            metadata = {row['key']: row['value'] for row in (metadata_rows or [])}
-            
-            # Create agent object
-            from chaoscore.core.agent_registry import Agent
-            result.append(Agent(
-                agent_id=agent['id'],
-                name=agent['name'],
-                email=agent['email'],
-                metadata=metadata
-            ))
+            result.append(Agent(agent_data))
         
         return result
-
-
-class PostgreSQLProofOfAgency:
-    """
-    PostgreSQL implementation of the Proof of Agency.
-    """
     
-    def __init__(self, db=None):
-        """
-        Initialize the PostgreSQL Proof of Agency.
-        
-        Args:
-            db: Optional database adapter
-        """
-        self.db = db or PostgreSQLAdapter()
-        self.anchor_client = None
-    
-    def set_anchor_client(self, client):
-        """
-        Set the anchor client for blockchain anchoring.
-        
-        Args:
-            client: Anchor client
-        """
-        self.anchor_client = client
+    # --- Action Methods ---
     
     def log_action(self, agent_id, action_type, description, data=None):
-        """
-        Log an action.
+        """Log an action."""
+        action_id = f"action-{uuid.uuid4()}"
+        timestamp = datetime.now()
         
-        Args:
-            agent_id: Agent ID
-            action_type: Type of action
-            description: Action description
-            data: Optional action data
-            
-        Returns:
-            Action ID
-        """
-        from uuid import uuid4
-        
-        # Generate ID
-        action_id = f"action-{uuid4()}"
-        
-        # Insert action
-        self.db.execute(
-            """
-            INSERT INTO actions (id, agent_id, action_type, description)
-            VALUES (%(id)s, %(agent_id)s, %(action_type)s, %(description)s)
-            """,
-            {'id': action_id, 'agent_id': agent_id, 'action_type': action_type, 'description': description}
-        )
-        
-        # Insert data
-        if data:
-            for key, value in data.items():
-                self.db.execute(
-                    """
-                    INSERT INTO action_data (action_id, key, value)
-                    VALUES (%(action_id)s, %(key)s, %(value)s)
-                    """,
-                    {'action_id': action_id, 'key': key, 'value': str(value)}
-                )
-        
-        # Update metrics
-        self.db.execute(
-            "UPDATE metrics SET value = value + 1 WHERE name = 'action_count'"
-        )
-        
-        # If action type is SIMULATE, update simulation count
-        if action_type == 'SIMULATE':
-            self.db.execute(
-                "UPDATE metrics SET value = value + 1 WHERE name = 'simulation_count'"
-            )
-        
-        # Anchor the action if an anchor client is set
-        if self.anchor_client:
-            try:
-                result = self.anchor_client.anchor_action(
-                    action_id=action_id,
-                    agent_id=agent_id,
-                    action_type=action_type,
-                    metadata_uri=f"ipfs://{action_id}"  # In a real implementation, we would store actual metadata
-                )
-                
-                # Update action with anchoring information
-                self.db.execute(
-                    "UPDATE actions SET anchored = TRUE, tx_hash = %(tx_hash)s WHERE id = %(id)s",
-                    {'id': action_id, 'tx_hash': result.get('tx_hash')}
-                )
-                
-                # Update metrics
-                self.db.execute(
-                    "UPDATE metrics SET value = value + 1 WHERE name = 'anchoring_count'"
-                )
-            except Exception as e:
-                logger.error(f"Error anchoring action: {e}")
+        self.actions[action_id] = {
+            "id": action_id,
+            "agent_id": agent_id,
+            "action_type": action_type,
+            "description": description,
+            "data": data or {},
+            "timestamp": timestamp
+        }
         
         return action_id
     
     def record_outcome(self, action_id, success, results=None, impact_score=0.0):
-        """
-        Record the outcome of an action.
-        
-        Args:
-            action_id: Action ID
-            success: Whether the action was successful
-            results: Optional action results
-            impact_score: Impact score of the action
-            
-        Returns:
-            Whether the outcome was recorded successfully
-        """
-        try:
-            # Insert outcome
-            self.db.execute(
-                """
-                INSERT INTO outcomes (action_id, success, impact_score)
-                VALUES (%(action_id)s, %(success)s, %(impact_score)s)
-                """,
-                {'action_id': action_id, 'success': success, 'impact_score': impact_score}
-            )
-            
-            # Insert results
-            if results:
-                for key, value in results.items():
-                    self.db.execute(
-                        """
-                        INSERT INTO outcome_results (action_id, key, value)
-                        VALUES (%(action_id)s, %(key)s, %(value)s)
-                        """,
-                        {'action_id': action_id, 'key': key, 'value': str(value)}
-                    )
-            
-            # Anchor the outcome if an anchor client is set
-            if self.anchor_client:
-                try:
-                    result = self.anchor_client.record_outcome(
-                        action_id=action_id,
-                        outcome_uri=f"ipfs://{action_id}-outcome"  # In a real implementation, we would store actual metadata
-                    )
-                    
-                    # Update outcome with anchoring information
-                    self.db.execute(
-                        "UPDATE outcomes SET anchored = TRUE, tx_hash = %(tx_hash)s WHERE action_id = %(action_id)s",
-                        {'action_id': action_id, 'tx_hash': result.get('tx_hash')}
-                    )
-                    
-                    # Update metrics
-                    self.db.execute(
-                        "UPDATE metrics SET value = value + 1 WHERE name = 'anchoring_count'"
-                    )
-                except Exception as e:
-                    logger.error(f"Error anchoring outcome: {e}")
-            
-            return True
-        except Exception as e:
-            logger.error(f"Error recording outcome: {e}")
+        """Record the outcome of an action."""
+        if action_id not in self.actions:
             return False
-
-
-class PostgreSQLReputationSystem:
-    """
-    PostgreSQL implementation of the Reputation System.
-    """
-    
-    def __init__(self, db=None):
-        """
-        Initialize the PostgreSQL Reputation System.
         
-        Args:
-            db: Optional database adapter
-        """
-        self.db = db or PostgreSQLAdapter()
-    
-    def update_reputation(self, agent_id, delta, context='global'):
-        """
-        Update an agent's reputation.
+        timestamp = datetime.now()
         
-        Args:
-            agent_id: Agent ID
-            delta: Reputation delta
-            context: Reputation context
+        self.outcomes[action_id] = {
+            "action_id": action_id,
+            "success": success,
+            "results": results or {},
+            "impact_score": impact_score,
+            "timestamp": timestamp
+        }
+        
+        # Update reputation for the agent
+        agent_id = self.actions[action_id]["agent_id"]
+        self._update_reputation(agent_id, impact_score if success else -impact_score)
+        
+        return True
+    
+    # --- Studio Methods ---
+    
+    def create_studio(self, name, description, owner_id, metadata=None):
+        """Create a new studio."""
+        studio_id = f"studio-{uuid.uuid4()}"
+        created_at = datetime.now()
+        
+        self.studios[studio_id] = {
+            "id": studio_id,
+            "name": name,
+            "description": description,
+            "owner_id": owner_id,
+            "metadata": metadata or {},
+            "created_at": created_at
+        }
+        
+        return studio_id
+    
+    def get_studio(self, studio_id):
+        """Get a studio by ID."""
+        if studio_id not in self.studios:
+            return None
+        
+        studio_data = self.studios[studio_id]
+        
+        class Studio:
+            def __init__(self, data):
+                self.data = data
             
-        Returns:
-            New reputation score
-        """
-        # Check if agent has a reputation score
-        score = self.db.execute(
-            """
-            SELECT score FROM reputation_scores
-            WHERE agent_id = %(agent_id)s AND context = %(context)s
-            """,
-            {'agent_id': agent_id, 'context': context},
-            fetch='one'
+            def get_id(self):
+                return self.data["id"]
+            
+            def get_name(self):
+                return self.data["name"]
+            
+            def get_description(self):
+                return self.data["description"]
+            
+            def get_owner_id(self):
+                return self.data["owner_id"]
+            
+            def get_metadata(self):
+                return self.data["metadata"]
+            
+            def get_created_at(self):
+                return self.data["created_at"]
+        
+        return Studio(studio_data)
+    
+    def list_studios(self, limit=10, offset=0):
+        """List studios with pagination."""
+        studio_list = list(self.studios.values())[offset:offset+limit]
+        
+        result = []
+        for studio_data in studio_list:
+            class Studio:
+                def __init__(self, data):
+                    self.data = data
+                
+                def get_id(self):
+                    return self.data["id"]
+                
+                def get_name(self):
+                    return self.data["name"]
+                
+                def get_description(self):
+                    return self.data["description"]
+                
+                def get_owner_id(self):
+                    return self.data["owner_id"]
+                
+                def get_metadata(self):
+                    return self.data["metadata"]
+                
+                def get_created_at(self):
+                    return self.data["created_at"]
+            
+            result.append(Studio(studio_data))
+        
+        return result
+    
+    def create_task(self, studio_id, name, description, parameters=None):
+        """Create a new task."""
+        if studio_id not in self.studios:
+            return None
+        
+        task_id = f"task-{uuid.uuid4()}"
+        created_at = datetime.now()
+        updated_at = created_at
+        
+        self.tasks[task_id] = {
+            "id": task_id,
+            "studio_id": studio_id,
+            "name": name,
+            "description": description,
+            "parameters": parameters or {},
+            "status": "PENDING",
+            "created_at": created_at,
+            "updated_at": updated_at
+        }
+        
+        return task_id
+    
+    def get_task(self, task_id):
+        """Get a task by ID."""
+        if task_id not in self.tasks:
+            return None
+        
+        task_data = self.tasks[task_id]
+        
+        class Task:
+            def __init__(self, data):
+                self.data = data
+            
+            def get_id(self):
+                return self.data["id"]
+            
+            def get_studio_id(self):
+                return self.data["studio_id"]
+            
+            def get_name(self):
+                return self.data["name"]
+            
+            def get_description(self):
+                return self.data["description"]
+            
+            def get_parameters(self):
+                return self.data["parameters"]
+            
+            def get_status(self):
+                return self.data["status"]
+            
+            def get_created_at(self):
+                return self.data["created_at"]
+            
+            def get_updated_at(self):
+                return self.data["updated_at"]
+        
+        return Task(task_data)
+    
+    # --- Reputation Methods ---
+    
+    def _update_reputation(self, agent_id, delta):
+        """Update agent reputation."""
+        if agent_id not in self.agents:
+            return
+        
+        if agent_id not in self.reputation:
+            self.reputation[agent_id] = {
+                "agent_id": agent_id,
+                "score": 0.0,
+                "rank": None,
+                "components": {},
+                "last_updated": datetime.now()
+            }
+        
+        self.reputation[agent_id]["score"] += delta
+        self.reputation[agent_id]["last_updated"] = datetime.now()
+        
+        # Update ranks
+        sorted_agents = sorted(
+            self.reputation.values(),
+            key=lambda x: x["score"],
+            reverse=True
         )
         
-        if score:
-            # Update existing score
-            new_score = score['score'] + delta
-            self.db.execute(
-                """
-                UPDATE reputation_scores
-                SET score = %(score)s, last_updated = NOW()
-                WHERE agent_id = %(agent_id)s AND context = %(context)s
-                """,
-                {'agent_id': agent_id, 'context': context, 'score': new_score}
-            )
-        else:
-            # Insert new score
-            new_score = delta
-            self.db.execute(
-                """
-                INSERT INTO reputation_scores (agent_id, context, score)
-                VALUES (%(agent_id)s, %(context)s, %(score)s)
-                """,
-                {'agent_id': agent_id, 'context': context, 'score': new_score}
-            )
-        
-        return new_score
+        for i, agent in enumerate(sorted_agents):
+            agent["rank"] = i + 1
     
-    def get_reputation(self, agent_id, context='global'):
-        """
-        Get an agent's reputation.
+    def get_agent_reputation(self, agent_id):
+        """Get reputation for an agent."""
+        if agent_id not in self.reputation:
+            return None
         
-        Args:
-            agent_id: Agent ID
-            context: Reputation context
+        reputation_data = self.reputation[agent_id]
+        
+        class Reputation:
+            def __init__(self, data):
+                self.data = data
             
-        Returns:
-            Reputation score
-        """
-        score = self.db.execute(
-            """
-            SELECT score FROM reputation_scores
-            WHERE agent_id = %(agent_id)s AND context = %(context)s
-            """,
-            {'agent_id': agent_id, 'context': context},
-            fetch='one'
+            def get_agent_id(self):
+                return self.data["agent_id"]
+            
+            def get_score(self):
+                return self.data["score"]
+            
+            def get_rank(self):
+                return self.data["rank"]
+            
+            def get_components(self):
+                return self.data["components"]
+            
+            def get_last_updated(self):
+                return self.data["last_updated"]
+        
+        return Reputation(reputation_data)
+    
+    def list_agent_reputations(self, limit=10, offset=0, min_score=None, domain=None):
+        """List agent reputations with pagination and filtering."""
+        filtered_reputations = self.reputation.values()
+        
+        if min_score is not None:
+            filtered_reputations = [r for r in filtered_reputations if r["score"] >= min_score]
+        
+        # Domain filtering not implemented for this mock
+        
+        sorted_reputations = sorted(
+            filtered_reputations,
+            key=lambda x: x["score"],
+            reverse=True
         )
         
-        return score['score'] if score else 0.0
-    
-    def get_top_agents(self, context='global', limit=10):
-        """
-        Get the top agents by reputation.
+        paginated_reputations = sorted_reputations[offset:offset+limit]
         
-        Args:
-            context: Reputation context
-            limit: Maximum number of agents to return
+        result = []
+        for reputation_data in paginated_reputations:
+            class Reputation:
+                def __init__(self, data):
+                    self.data = data
+                
+                def get_agent_id(self):
+                    return self.data["agent_id"]
+                
+                def get_score(self):
+                    return self.data["score"]
+                
+                def get_rank(self):
+                    return self.data["rank"]
+                
+                def get_components(self):
+                    return self.data["components"]
+                
+                def get_last_updated(self):
+                    return self.data["last_updated"]
             
-        Returns:
-            List of agents with their reputation scores
-        """
-        results = self.db.execute(
-            """
-            SELECT a.id, a.name, r.score
-            FROM reputation_scores r
-            JOIN agents a ON r.agent_id = a.id
-            WHERE r.context = %(context)s
-            ORDER BY r.score DESC
-            LIMIT %(limit)s
-            """,
-            {'context': context, 'limit': limit},
-            fetch='all'
-        )
+            result.append(Reputation(reputation_data))
         
-        return results 
+        return result
+    
+    def get_domain_reputation_leaderboard(self, domain, limit=10, offset=0):
+        """Get reputation leaderboard for a specific domain."""
+        # Domain filtering not implemented for this mock
+        return self.list_agent_reputations(limit=limit, offset=offset) 
