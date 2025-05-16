@@ -3,12 +3,13 @@ Actions Router for ChaosCore API Gateway
 
 This module provides endpoints for managing actions in the ChaosCore platform.
 """
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, Path
 from pydantic import BaseModel, Field
 
 from chaoscore.core.proof_of_agency import ProofOfAgencyInterface
 from api_gateway.auth.jwt_auth import JWTAuth
+from api_gateway.routers.common import PoADep, JWTAuthDep, CurrentAgentDep
 
 
 # Models
@@ -65,23 +66,12 @@ class ActionList(BaseModel):
 router = APIRouter()
 
 
-# Dependencies
-def get_proof_of_agency(poa: ProofOfAgencyInterface = Depends()) -> ProofOfAgencyInterface:
-    """Get the proof of agency."""
-    return poa
-
-
-def get_jwt_auth(auth: JWTAuth = Depends()) -> JWTAuth:
-    """Get the JWT authentication handler."""
-    return auth
-
-
 # Endpoints
 @router.post("", response_model=ActionResponse, status_code=201)
 async def create_action(
     action: ActionCreate,
-    poa: ProofOfAgencyInterface = Depends(get_proof_of_agency),
-    current_agent: Dict[str, Any] = Depends(JWTAuth.requires_auth)
+    poa: PoADep,
+    current_agent: CurrentAgentDep
 ):
     """
     Log an action.
@@ -128,8 +118,8 @@ async def create_action(
 async def record_outcome(
     outcome: OutcomeCreate,
     action_id: str = Path(..., description="Action ID"),
-    poa: ProofOfAgencyInterface = Depends(get_proof_of_agency),
-    current_agent: Dict[str, Any] = Depends(JWTAuth.requires_auth)
+    poa: PoADep,
+    current_agent: CurrentAgentDep
 ):
     """
     Record an action outcome.
@@ -183,12 +173,12 @@ async def record_outcome(
 
 @router.get("", response_model=ActionList)
 async def list_actions(
+    poa: PoADep,
+    current_agent: CurrentAgentDep,
     agent_id: Optional[str] = Query(None, description="Filter by agent ID"),
     action_type: Optional[str] = Query(None, description="Filter by action type"),
     page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(10, ge=1, le=100, description="Page size"),
-    poa: ProofOfAgencyInterface = Depends(get_proof_of_agency),
-    current_agent: Dict[str, Any] = Depends(JWTAuth.requires_auth)
+    page_size: int = Query(10, ge=1, le=100, description="Page size")
 ):
     """
     List actions.
@@ -207,9 +197,9 @@ async def list_actions(
 
 @router.get("/{action_id}", response_model=ActionResponse)
 async def get_action(
-    action_id: str = Path(..., description="Action ID"),
-    poa: ProofOfAgencyInterface = Depends(get_proof_of_agency),
-    current_agent: Dict[str, Any] = Depends(JWTAuth.requires_auth)
+    action_id: str,
+    poa: PoADep,
+    current_agent: CurrentAgentDep
 ):
     """
     Get an action.

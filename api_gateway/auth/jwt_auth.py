@@ -7,6 +7,7 @@ retrieved from the AgentRegistry.
 """
 import os
 import time
+import json
 from typing import Dict, Optional, Any
 import jwt
 from fastapi import Depends, HTTPException, Security
@@ -104,7 +105,16 @@ class JWTAuth:
                 )
             
             # Get the agent's public key from metadata
-            public_key = agent.get_metadata().get("public_key")
+            metadata = agent.get("metadata", {}) if isinstance(agent, dict) else {}
+            
+            # Ensure metadata is a dictionary
+            if isinstance(metadata, str):
+                try:
+                    metadata = json.loads(metadata)
+                except (json.JSONDecodeError, TypeError):
+                    metadata = {}
+            
+            public_key = metadata.get("public_key")
             
             if not public_key:
                 raise HTTPException(
@@ -130,9 +140,9 @@ class JWTAuth:
             # Return the agent information
             return {
                 "agent_id": agent_id,
-                "name": agent.get_name(),
-                "email": agent.get_email(),
-                "metadata": agent.get_metadata()
+                "name": agent.get("name") if isinstance(agent, dict) else agent.get_name(),
+                "email": agent.get("email") if isinstance(agent, dict) else agent.get_email(),
+                "metadata": metadata
             }
         except jwt.ExpiredSignatureError:
             raise HTTPException(
@@ -151,7 +161,7 @@ class JWTAuth:
             )
     
     # Dependency for protected routes
-    def requires_auth(self, credentials: HTTPAuthorizationCredentials = Security(security)) -> Dict[str, Any]:
+    async def requires_auth(self, credentials: HTTPAuthorizationCredentials = Security(security)) -> Dict[str, Any]:
         """
         Dependency for protected routes that require authentication.
         
@@ -161,4 +171,4 @@ class JWTAuth:
         Returns:
             Agent information
         """
-        return self.get_current_agent(credentials) 
+        return await self.get_current_agent(credentials) 

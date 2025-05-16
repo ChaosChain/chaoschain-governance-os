@@ -1,187 +1,214 @@
 """
-Agents Router for ChaosCore API Gateway
+Agents router for the ChaosCore API Gateway.
 
-This module provides endpoints for managing agents in the ChaosCore platform.
+This module provides endpoints for managing agents.
 """
-from typing import Dict, Any, List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, Path
+
+import uuid
+from typing import Dict, Any, List, Optional, Annotated
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, EmailStr
 
 from chaoscore.core.agent_registry import AgentRegistryInterface
 from api_gateway.auth.jwt_auth import JWTAuth
-
-
-# Models
-class AgentMetadata(BaseModel):
-    """Agent metadata."""
-    role: Optional[str] = None
-    expertise: Optional[str] = None
-    public_key: Optional[str] = None
-    version: Optional[str] = None
-    capabilities: Optional[List[str]] = None
+from api_gateway.routers.common import RegistryDep, JWTAuthDep, CurrentAgentDep
 
 
 class AgentCreate(BaseModel):
-    """Agent creation request."""
-    name: str = Field(..., min_length=1, max_length=255, description="Agent name")
-    email: EmailStr = Field(..., description="Agent email")
-    metadata: Optional[AgentMetadata] = Field(default=None, description="Agent metadata")
+    """Agent creation model."""
+    name: str = Field(..., description="Agent name")
+    email: Optional[EmailStr] = Field(None, description="Agent email")
+    metadata: Optional[Dict[str, Any]] = Field(None, description="Agent metadata")
+
+
+class AgentUpdate(BaseModel):
+    """Agent update model."""
+    name: Optional[str] = Field(None, description="Agent name")
+    email: Optional[EmailStr] = Field(None, description="Agent email")
+    metadata: Optional[Dict[str, Any]] = Field(None, description="Agent metadata")
 
 
 class AgentResponse(BaseModel):
-    """Agent response."""
+    """Agent response model."""
     id: str = Field(..., description="Agent ID")
     name: str = Field(..., description="Agent name")
-    email: str = Field(..., description="Agent email")
-    created_at: Optional[str] = Field(None, description="Creation timestamp")
-    metadata: Optional[Dict[str, Any]] = Field(default={}, description="Agent metadata")
+    email: Optional[str] = Field(None, description="Agent email")
+    created_at: str = Field(..., description="Creation timestamp")
+    updated_at: str = Field(..., description="Last update timestamp")
+    metadata: Optional[Dict[str, Any]] = Field(None, description="Agent metadata")
 
 
-class AgentList(BaseModel):
-    """List of agents."""
+class AgentListResponse(BaseModel):
+    """Agent list response model."""
     agents: List[AgentResponse] = Field(..., description="List of agents")
     total: int = Field(..., description="Total number of agents")
     page: int = Field(..., description="Current page")
     page_size: int = Field(..., description="Page size")
 
 
-# Router
+# Create router
 router = APIRouter()
 
 
-# Dependencies
-def get_agent_registry(registry: AgentRegistryInterface = Depends()) -> AgentRegistryInterface:
-    """Get the agent registry."""
-    return registry
-
-
-def get_jwt_auth(auth: JWTAuth = Depends()) -> JWTAuth:
-    """Get the JWT authentication handler."""
-    return auth
-
-
-# Endpoints
 @router.post("", response_model=AgentResponse, status_code=201)
 async def create_agent(
     agent: AgentCreate,
-    registry: AgentRegistryInterface = Depends(get_agent_registry)
+    agent_registry: RegistryDep
 ):
     """
     Create a new agent.
     
-    This endpoint registers a new agent in the ChaosCore platform.
+    Args:
+        agent: Agent creation data
+        agent_registry: Agent registry
+        
+    Returns:
+        Created agent
     """
-    metadata = agent.metadata.dict() if agent.metadata else {}
+    agent_id = f"agent-{uuid.uuid4()}"
+    agent_registry.create_agent(
+        agent_id=agent_id,
+        name=agent.name,
+        email=agent.email,
+        metadata=agent.metadata
+    )
     
-    # Filter out None values
-    metadata = {k: v for k, v in metadata.items() if v is not None}
+    # Get the created agent
+    created_agent = agent_registry.get_agent(agent_id)
+    if not created_agent:
+        raise HTTPException(status_code=500, detail="Failed to create agent")
     
-    try:
-        agent_id = registry.register_agent(
-            name=agent.name,
-            email=agent.email,
-            metadata=metadata
-        )
-        
-        # Get the created agent
-        created_agent = registry.get_agent(agent_id)
-        
-        if not created_agent:
-            raise HTTPException(status_code=500, detail="Failed to retrieve created agent")
-        
-        # Convert to response model
-        return AgentResponse(
-            id=created_agent.get_id(),
-            name=created_agent.get_name(),
-            email=created_agent.get_email(),
-            metadata=created_agent.get_metadata()
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create agent: {str(e)}")
+    return created_agent
 
 
-@router.get("", response_model=AgentList)
+@router.get("", response_model=AgentListResponse)
 async def list_agents(
-    page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(10, ge=1, le=100, description="Page size"),
-    registry: AgentRegistryInterface = Depends(get_agent_registry),
-    current_agent: Dict[str, Any] = Depends(JWTAuth.requires_auth)
+    agent_registry: RegistryDep,
+    auth: JWTAuthDep,
+    page: int = 1,
+    page_size: int = 10
 ):
     """
     List agents.
     
-    This endpoint retrieves a list of agents registered in the ChaosCore platform.
+    Args:
+        agent_registry: Agent registry
+        auth: JWT auth
+        page: Page number
+        page_size: Page size
+        
+    Returns:
+        List of agents
     """
-    try:
-        # Calculate offset
-        offset = (page - 1) * page_size
-        
-        # Get agents
-        agents = registry.list_agents(limit=page_size, offset=offset)
-        
-        # Convert to response model
-        agent_responses = []
-        for agent in agents:
-            agent_responses.append(AgentResponse(
-                id=agent.get_id(),
-                name=agent.get_name(),
-                email=agent.get_email(),
-                metadata=agent.get_metadata()
-            ))
-        
-        # Return list
-        return AgentList(
-            agents=agent_responses,
-            total=len(agents),  # This is not accurate, but we don't have a count method
-            page=page,
-            page_size=page_size
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to list agents: {str(e)}")
-
-
-@router.get("/{agent_id}", response_model=AgentResponse)
-async def get_agent(
-    agent_id: str = Path(..., description="Agent ID"),
-    registry: AgentRegistryInterface = Depends(get_agent_registry),
-    current_agent: Dict[str, Any] = Depends(JWTAuth.requires_auth)
-):
-    """
-    Get an agent.
+    # Calculate offset
+    offset = (page - 1) * page_size
     
-    This endpoint retrieves an agent by ID.
-    """
-    try:
-        agent = registry.get_agent(agent_id)
-        
-        if not agent:
-            raise HTTPException(status_code=404, detail=f"Agent not found: {agent_id}")
-        
-        # Convert to response model
-        return AgentResponse(
-            id=agent.get_id(),
-            name=agent.get_name(),
-            email=agent.get_email(),
-            metadata=agent.get_metadata()
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get agent: {str(e)}")
+    # Get agents
+    agents = agent_registry.list_agents(
+        limit=page_size,
+        offset=offset
+    )
+    
+    # Get total count (in a real implementation, this would be a separate database query)
+    total = len(agents) + offset  # This is just a simple approximation
+    
+    return {
+        "agents": agents,
+        "total": total,
+        "page": page,
+        "page_size": page_size
+    }
 
 
 @router.get("/me", response_model=AgentResponse)
 async def get_current_agent(
-    current_agent: Dict[str, Any] = Depends(JWTAuth.requires_auth)
+    current_agent: CurrentAgentDep,
+    agent_registry: RegistryDep
 ):
     """
-    Get the current agent.
+    Get the current authenticated agent.
     
-    This endpoint retrieves the current authenticated agent.
+    Args:
+        current_agent: Current agent from JWT auth
+        agent_registry: Agent registry
+        
+    Returns:
+        Current agent
     """
-    return AgentResponse(
-        id=current_agent["agent_id"],
-        name=current_agent["name"],
-        email=current_agent["email"],
-        metadata=current_agent["metadata"]
-    ) 
+    agent_id = current_agent["agent_id"]
+    agent = agent_registry.get_agent(agent_id)
+    
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    
+    return agent
+
+
+@router.get("/{agent_id}", response_model=AgentResponse)
+async def get_agent(
+    agent_id: str,
+    agent_registry: RegistryDep,
+    auth: JWTAuthDep
+):
+    """
+    Get an agent by ID.
+    
+    Args:
+        agent_id: Agent ID
+        agent_registry: Agent registry
+        auth: JWT auth
+        
+    Returns:
+        Agent
+    """
+    agent = agent_registry.get_agent(agent_id)
+    
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    
+    return agent
+
+
+@router.put("/{agent_id}", response_model=AgentResponse)
+async def update_agent(
+    agent_id: str,
+    agent_update: AgentUpdate,
+    agent_registry: RegistryDep,
+    current_agent: CurrentAgentDep
+):
+    """
+    Update an agent.
+    
+    Args:
+        agent_id: Agent ID
+        agent_update: Agent update data
+        agent_registry: Agent registry
+        current_agent: Current agent from JWT auth
+        
+    Returns:
+        Updated agent
+    """
+    # Check if the agent exists
+    existing_agent = agent_registry.get_agent(agent_id)
+    if not existing_agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    
+    # Check if the current agent is updating itself
+    if current_agent["agent_id"] != agent_id:
+        raise HTTPException(status_code=403, detail="You can only update your own agent")
+    
+    # Update the agent
+    success = agent_registry.update_agent(
+        agent_id=agent_id,
+        name=agent_update.name,
+        email=agent_update.email,
+        metadata=agent_update.metadata
+    )
+    
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to update agent")
+    
+    # Get the updated agent
+    updated_agent = agent_registry.get_agent(agent_id)
+    
+    return updated_agent 

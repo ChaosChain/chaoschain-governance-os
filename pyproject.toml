@@ -29,6 +29,7 @@ dependencies = [
     "uvicorn>=0.22.0",
     "alembic>=1.15.0",
     "psycopg2-binary>=2.9.0",
+    "email-validator>=2.1",
 ]
 
 [project.optional-dependencies]
@@ -44,9 +45,6 @@ dev = [
 [tool.setuptools]
 packages = [
     "agent",
-    "agent.crew",
-    "agent.crew.researcher",
-    "agent.crew.developer", 
     "agent.runtime",
     "agent.tools",
     "verification",
@@ -67,7 +65,8 @@ packages = [
     "api",
     "api.rest",
     "api.models",
-    "api.auth"
+    "api.auth",
+    "api_gateway"
 ]
 
 [tool.pytest]

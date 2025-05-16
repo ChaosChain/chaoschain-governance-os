@@ -19,6 +19,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: ${{ github.workspace }}
 
     steps:
     - uses: actions/checkout@v4
@@ -36,6 +38,7 @@ jobs:
         pip install psycopg[binary]
         pip install pytest pytest-asyncio pytest-cov
         pip install -r requirements-dev.txt
+        pip install email-validator
     
     - name: Run tests
       env:

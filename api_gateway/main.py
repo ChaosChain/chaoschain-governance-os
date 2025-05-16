@@ -4,30 +4,32 @@ ChaosCore API Gateway
 This is the main entry point for the ChaosCore API Gateway.
 """
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Callable
 import logging
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 
 # Core imports
-from chaoscore.core.database_adapter import PostgreSQLAdapter
-from chaoscore.core.agent_registry import AgentRegistryInterface
-from chaoscore.core.proof_of_agency import ProofOfAgencyInterface
-from chaoscore.core.secure_execution import SecureExecutionEnvironment
-from chaoscore.core.reputation import ReputationSystem
-from chaoscore.core.studio import StudioManager
-
-# Database imports
 from chaoscore.core.database_adapter import (
+    get_database_adapter,
     PostgreSQLAgentRegistry,
     PostgreSQLProofOfAgency,
     PostgreSQLReputationSystem
 )
+from chaoscore.core.agent_registry import AgentRegistryInterface
+from chaoscore.core.proof_of_agency import ProofOfAgencyInterface
+from chaoscore.core.secure_execution import SecureExecutionEnvironment, InMemorySecureExecution
 from chaoscore.core.secure_execution_sgx import SGXSecureExecutionEnvironment
+from chaoscore.core.reputation import ReputationSystem
+from chaoscore.core.studio import StudioManager, InMemoryStudioManager
+from chaoscore.core.ethereum import EthereumClient
 
 # Auth
 from api_gateway.auth.jwt_auth import JWTAuth
+
+# Dependencies
+import api_gateway.dependencies as deps
 
 # Router imports
 from api_gateway.routers import agents, actions, studios, reputation
@@ -63,66 +65,64 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Core components
+# Core components (initialized during startup)
 db = None
-agent_registry = None
-proof_of_agency = None
-secure_execution = None
-reputation_system = None
-studio_manager = None
-jwt_auth = None
 
 
 @app.on_event("startup")
 async def startup_event():
     """Initialize components on startup."""
-    global db, agent_registry, proof_of_agency, secure_execution, reputation_system, studio_manager, jwt_auth
+    global db
     
     logger.info(f"Starting API Gateway in {ENV} environment")
     
-    # Initialize database
-    db = PostgreSQLAdapter()
-    agent_registry = PostgreSQLAgentRegistry(db)
-    proof_of_agency = PostgreSQLProofOfAgency(db)
-    reputation_system = PostgreSQLReputationSystem(db)
+    # Initialize database adapter
+    try:
+        db = get_database_adapter()
+        db.create_tables()
+        logger.info("Database initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}")
+        raise
+    
+    # Initialize core components
+    deps.agent_registry = PostgreSQLAgentRegistry(db)
+    deps.proof_of_agency = PostgreSQLProofOfAgency(db)
+    deps.reputation_system = PostgreSQLReputationSystem(db)
     
     # Initialize secure execution
     if USE_SGX:
         logger.info(f"Using SGX Secure Execution Environment at {SGX_URL}")
         try:
-            secure_execution = SGXSecureExecutionEnvironment(SGX_URL)
-            enclave_info = secure_execution.get_enclave_info()
+            deps.secure_execution = SGXSecureExecutionEnvironment(SGX_URL)
+            enclave_info = deps.secure_execution.get_enclave_info()
             logger.info(f"Connected to SGX enclave with hash: {enclave_info.get('enclave_hash', 'unknown')}")
         except Exception as e:
             logger.warning(f"Could not connect to SGX enclave: {e}")
             logger.warning("Falling back to in-memory secure execution")
-            from chaoscore.core.secure_execution import InMemorySecureExecution
-            secure_execution = InMemorySecureExecution()
+            deps.secure_execution = InMemorySecureExecution()
     else:
         logger.info("Using in-memory secure execution (SGX mocked)")
-        from chaoscore.core.secure_execution import InMemorySecureExecution
-        secure_execution = InMemorySecureExecution()
+        deps.secure_execution = InMemorySecureExecution()
     
     # Initialize studio manager
-    from chaoscore.core.studio import InMemoryStudioManager
-    studio_manager = InMemoryStudioManager()
+    deps.studio_manager = InMemoryStudioManager()
     
     # Initialize Ethereum client if needed
     if USE_ETHEREUM:
         logger.info(f"Using Ethereum anchoring with provider: {ETHEREUM_PROVIDER_URL}")
         logger.info(f"Contract address: {ETHEREUM_CONTRACT_ADDRESS}")
         
-        from chaoscore.core.ethereum import EthereumClient
         ethereum_client = EthereumClient(
             contract_address=ETHEREUM_CONTRACT_ADDRESS,
             provider_url=ETHEREUM_PROVIDER_URL
         )
         
         # Connect with the proof of agency
-        proof_of_agency.set_anchor_client(ethereum_client)
+        deps.proof_of_agency.set_anchor_client(ethereum_client)
     
     # Initialize JWT auth
-    jwt_auth = JWTAuth(agent_registry)
+    deps.jwt_auth = JWTAuth(deps.agent_registry)
     
     # Configure routers with dependencies
     configure_routers()
@@ -140,52 +140,33 @@ async def shutdown_event():
 
 def configure_routers():
     """Configure routers with dependencies."""
-    # Create dependency functions
-    def get_agent_registry() -> AgentRegistryInterface:
-        return agent_registry
-    
-    def get_proof_of_agency() -> ProofOfAgencyInterface:
-        return proof_of_agency
-    
-    def get_secure_execution() -> SecureExecutionEnvironment:
-        return secure_execution
-    
-    def get_reputation_system() -> ReputationSystem:
-        return reputation_system
-    
-    def get_studio_manager() -> StudioManager:
-        return studio_manager
-    
-    def get_jwt_auth() -> JWTAuth:
-        return jwt_auth
-    
-    # Initialize routers with dependencies
+    # Configure the routers with dependencies
     app.include_router(
         agents.router,
         prefix="/agents",
         tags=["Agents"],
-        dependencies=[Depends(get_agent_registry), Depends(get_jwt_auth)]
+        dependencies=[Depends(deps.get_agent_registry), Depends(deps.get_jwt_auth)]
     )
     
     app.include_router(
         actions.router,
         prefix="/actions",
         tags=["Actions"],
-        dependencies=[Depends(get_proof_of_agency), Depends(get_jwt_auth)]
+        dependencies=[Depends(deps.get_proof_of_agency), Depends(deps.get_jwt_auth)]
     )
     
     app.include_router(
         studios.router,
         prefix="/studios",
         tags=["Studios"],
-        dependencies=[Depends(get_studio_manager), Depends(get_jwt_auth)]
+        dependencies=[Depends(deps.get_studio_manager), Depends(deps.get_jwt_auth)]
     )
     
     app.include_router(
         reputation.router,
         prefix="/reputation",
         tags=["Reputation"],
-        dependencies=[Depends(get_reputation_system), Depends(get_jwt_auth)]
+        dependencies=[Depends(deps.get_reputation_system), Depends(deps.get_jwt_auth)]
     )
 
 
@@ -232,14 +213,22 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    if not db or not agent_registry or not proof_of_agency or not secure_execution:
+    if not db or not deps.agent_registry or not deps.proof_of_agency or not deps.secure_execution:
         raise HTTPException(status_code=500, detail="API Gateway not fully initialized")
+    
+    db_status = "connected"
+    try:
+        # Test database connection
+        db.execute("SELECT 1")
+        db.fetchone()
+    except Exception as e:
+        db_status = f"disconnected ({str(e)})"
     
     return {
         "status": "healthy",
         "environment": ENV,
         "components": {
-            "database": "connected" if db.conn and not db.conn.closed else "disconnected",
+            "database": db_status,
             "agent_registry": "available",
             "proof_of_agency": "available" + (" (with anchoring)" if USE_ETHEREUM else ""),
             "secure_execution": "available" + (" (SGX)" if USE_SGX else " (in-memory)"),

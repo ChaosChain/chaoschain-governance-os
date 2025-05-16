@@ -3,12 +3,13 @@ Studios Router for ChaosCore API Gateway
 
 This module provides endpoints for managing studios in the ChaosCore platform.
 """
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, Path
 from pydantic import BaseModel, Field
 
 from chaoscore.core.studio import StudioManager
 from api_gateway.auth.jwt_auth import JWTAuth
+from api_gateway.routers.common import StudioManagerDep, JWTAuthDep, CurrentAgentDep
 
 
 # Models
@@ -50,23 +51,12 @@ class StudioList(BaseModel):
 router = APIRouter()
 
 
-# Dependencies
-def get_studio_manager(manager: StudioManager = Depends()) -> StudioManager:
-    """Get the studio manager."""
-    return manager
-
-
-def get_jwt_auth(auth: JWTAuth = Depends()) -> JWTAuth:
-    """Get the JWT authentication handler."""
-    return auth
-
-
 # Endpoints
 @router.post("", response_model=StudioResponse, status_code=201)
 async def create_studio(
     studio: StudioCreate,
-    manager: StudioManager = Depends(get_studio_manager),
-    current_agent: Dict[str, Any] = Depends(JWTAuth.requires_auth)
+    manager: StudioManagerDep,
+    current_agent: CurrentAgentDep
 ):
     """
     Create a new studio.
@@ -114,10 +104,10 @@ async def create_studio(
 
 @router.get("", response_model=StudioList)
 async def list_studios(
+    manager: StudioManagerDep,
+    current_agent: CurrentAgentDep,
     page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(10, ge=1, le=100, description="Page size"),
-    manager: StudioManager = Depends(get_studio_manager),
-    current_agent: Dict[str, Any] = Depends(JWTAuth.requires_auth)
+    page_size: int = Query(10, ge=1, le=100, description="Page size")
 ):
     """
     List studios.
@@ -160,9 +150,9 @@ async def list_studios(
 
 @router.get("/{studio_id}", response_model=StudioResponse)
 async def get_studio(
-    studio_id: str = Path(..., description="Studio ID"),
-    manager: StudioManager = Depends(get_studio_manager),
-    current_agent: Dict[str, Any] = Depends(JWTAuth.requires_auth)
+    studio_id: str,
+    manager: StudioManagerDep,
+    current_agent: CurrentAgentDep
 ):
     """
     Get a studio.
@@ -208,9 +198,9 @@ async def get_studio(
 @router.post("/{studio_id}/members", response_model=StudioResponse)
 async def add_member(
     member: StudioMember,
-    studio_id: str = Path(..., description="Studio ID"),
-    manager: StudioManager = Depends(get_studio_manager),
-    current_agent: Dict[str, Any] = Depends(JWTAuth.requires_auth)
+    studio_id: str,
+    manager: StudioManagerDep,
+    current_agent: CurrentAgentDep
 ):
     """
     Add a member to a studio.
@@ -262,10 +252,10 @@ async def add_member(
 
 @router.delete("/{studio_id}/members/{agent_id}", response_model=StudioResponse)
 async def remove_member(
-    studio_id: str = Path(..., description="Studio ID"),
-    agent_id: str = Path(..., description="Agent ID"),
-    manager: StudioManager = Depends(get_studio_manager),
-    current_agent: Dict[str, Any] = Depends(JWTAuth.requires_auth)
+    studio_id: str,
+    agent_id: str,
+    manager: StudioManagerDep,
+    current_agent: CurrentAgentDep
 ):
     """
     Remove a member from a studio.
@@ -286,10 +276,7 @@ async def remove_member(
             raise HTTPException(status_code=403, detail="Only the studio owner can remove members")
         
         # Remove the member
-        success = manager.remove_studio_member(
-            studio_id=studio_id,
-            agent_id=agent_id
-        )
+        success = manager.remove_studio_member(studio_id=studio_id, agent_id=agent_id)
         
         if not success:
             raise HTTPException(status_code=500, detail="Failed to remove member from studio")

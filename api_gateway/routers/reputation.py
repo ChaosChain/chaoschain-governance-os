@@ -3,12 +3,13 @@ Reputation Router for ChaosCore API Gateway
 
 This module provides endpoints for interacting with the reputation system in the ChaosCore platform.
 """
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, Path
 from pydantic import BaseModel, Field
 
 from chaoscore.core.reputation import ReputationSystem
 from api_gateway.auth.jwt_auth import JWTAuth
+from api_gateway.routers.common import ReputationSystemDep, JWTAuthDep, CurrentAgentDep
 
 
 # Models
@@ -50,24 +51,13 @@ class ReputationUpdate(BaseModel):
 router = APIRouter()
 
 
-# Dependencies
-def get_reputation_system(system: ReputationSystem = Depends()) -> ReputationSystem:
-    """Get the reputation system."""
-    return system
-
-
-def get_jwt_auth(auth: JWTAuth = Depends()) -> JWTAuth:
-    """Get the JWT authentication handler."""
-    return auth
-
-
 # Endpoints
 @router.get("/agents/{agent_id}", response_model=ReputationScore)
 async def get_reputation(
-    agent_id: str = Path(..., description="Agent ID"),
-    category: Optional[str] = Query(None, description="Reputation category"),
-    system: ReputationSystem = Depends(get_reputation_system),
-    current_agent: Dict[str, Any] = Depends(JWTAuth.requires_auth)
+    agent_id: str,
+    system: ReputationSystemDep,
+    current_agent: CurrentAgentDep,
+    category: Optional[str] = Query(None, description="Reputation category")
 ):
     """
     Get an agent's reputation score.
@@ -94,12 +84,12 @@ async def get_reputation(
 
 @router.get("/agents/{agent_id}/history", response_model=ReputationHistoryList)
 async def get_reputation_history(
-    agent_id: str = Path(..., description="Agent ID"),
+    agent_id: str,
+    system: ReputationSystemDep,
+    current_agent: CurrentAgentDep,
     category: Optional[str] = Query(None, description="Reputation category"),
     page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(10, ge=1, le=100, description="Page size"),
-    system: ReputationSystem = Depends(get_reputation_system),
-    current_agent: Dict[str, Any] = Depends(JWTAuth.requires_auth)
+    page_size: int = Query(10, ge=1, le=100, description="Page size")
 ):
     """
     Get an agent's reputation history.
@@ -144,9 +134,9 @@ async def get_reputation_history(
 @router.post("/agents/{agent_id}", response_model=ReputationScore)
 async def update_reputation(
     update: ReputationUpdate,
-    agent_id: str = Path(..., description="Agent ID"),
-    system: ReputationSystem = Depends(get_reputation_system),
-    current_agent: Dict[str, Any] = Depends(JWTAuth.requires_auth)
+    agent_id: str,
+    system: ReputationSystemDep,
+    current_agent: CurrentAgentDep
 ):
     """
     Update an agent's reputation score.
@@ -191,10 +181,10 @@ async def update_reputation(
 
 @router.get("/top", response_model=List[ReputationScore])
 async def get_top_agents(
+    system: ReputationSystemDep,
+    current_agent: CurrentAgentDep,
     category: Optional[str] = Query(None, description="Reputation category"),
-    limit: int = Query(10, ge=1, le=100, description="Number of top agents to retrieve"),
-    system: ReputationSystem = Depends(get_reputation_system),
-    current_agent: Dict[str, Any] = Depends(JWTAuth.requires_auth)
+    limit: int = Query(10, ge=1, le=100, description="Number of top agents to retrieve")
 ):
     """
     Get top agents by reputation score.
