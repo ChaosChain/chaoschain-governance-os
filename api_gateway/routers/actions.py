@@ -117,9 +117,9 @@ async def create_action(
 @router.post("/{action_id}/outcome", response_model=ActionResponse)
 async def record_outcome(
     outcome: OutcomeCreate,
-    action_id: str = Path(..., description="Action ID"),
     poa: PoADep,
-    current_agent: CurrentAgentDep
+    current_agent: CurrentAgentDep,
+    action_id: str = Path(..., description="Action ID")
 ):
     """
     Record an action outcome.
