@@ -1,0 +1,53 @@
+name: API Gateway CI
+
+on:
+  push:
+    branches: [ main, api-gateway, sprint6/hardening ]
+    paths:
+      - 'api_gateway/**'
+      - 'chaoscore/**'
+      - 'tests/api/**'
+      - '.github/workflows/api-gateway-ci.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'api_gateway/**'
+      - 'chaoscore/**'
+      - 'tests/api/**'
+      - '.github/workflows/api-gateway-ci.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install psycopg[binary]
+        pip install pytest pytest-asyncio pytest-cov
+        pip install -r requirements-dev.txt
+    
+    - name: Run tests
+      env:
+        SQLITE_TEST_MODE: "true"
+        SGX_MOCK: "true"
+        ETHEREUM_MOCK: "true"
+        CHAOSCORE_ENV: "test"
+      run: |
+        pytest tests/api/ -v --cov=api_gateway --cov=chaoscore/core
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./coverage.xml
+        fail_ci_if_error: false 
