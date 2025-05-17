@@ -1,0 +1,7 @@
+{
+  "network": "goerli",
+  "contractName": "ChaosEndpoint",
+  "address": "0x1234567890123456789012345678901234567890",
+  "deployedAt": "2023-05-17T12:00:00.000Z",
+  "blockNumber": 8765432
+} 
