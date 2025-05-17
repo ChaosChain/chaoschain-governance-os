@@ -21,6 +21,10 @@ const config: HardhatUserConfig = {
     hardhat: {
       chainId: 31337,
     },
+    goerli: {
+      url: `https://goerli.infura.io/v3/${INFURA_API_KEY}`,
+      accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
+    },
     sepolia: {
       url: `https://sepolia.infura.io/v3/${INFURA_API_KEY}`,
       accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],

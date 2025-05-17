@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  # Core services
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - sgx-mock
+    env_file:
+      - ./deployments/.env.staging
+    volumes:
+      - ./:/app
+    networks:
+      - chaoscore-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Persistence
+  db:
+    image: postgres:14
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=chaoscore
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - chaoscore-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Secure Execution Mock for staging
+  sgx-mock:
+    build:
+      context: ./tools/sgx-mock
+      dockerfile: Dockerfile
+    ports:
+      - "7000:7000"
+    environment:
+      - SGX_SIMULATION=true
+    volumes:
+      - ./tools/sgx-mock:/app
+    networks:
+      - chaoscore-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./deployments/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - chaoscore-network
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./deployments/grafana/provisioning:/etc/grafana/provisioning
+      - ./deployments/grafana/dashboard.json:/var/lib/grafana/dashboards/chaoscore.json
+    depends_on:
+      - prometheus
+    networks:
+      - chaoscore-network
+
+volumes:
+  postgres-data:
+
+networks:
+  chaoscore-network:
+    driver: bridge 

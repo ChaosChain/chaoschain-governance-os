@@ -1,0 +1,94 @@
+# ChaosCore Governance Studio Demo
+
+This document describes how to run the ChaosCore Governance Studio demonstration on the Goerli testnet.
+
+## Prerequisites
+
+- Node.js 16+
+- Hardhat
+- Docker & Docker Compose
+- Python 3.9+
+- Infura API key (for Goerli access)
+- Ethereum account with private key (with some Goerli ETH)
+
+## Environment Setup
+
+1. Set up your environment variables in a `.env` file in the project root:
+
+```bash
+INFURA_API_KEY=your_infura_api_key
+PRIVATE_KEY=your_ethereum_private_key
+ETHERSCAN_API_KEY=your_etherscan_api_key
+```
+
+## Deployment Process
+
+### 1. Deploy the ChaosEndpoint Contract to Goerli
+
+```bash
+# Deploy the contract to Goerli testnet
+make deploy-goerli
+```
+
+This will:
+- Deploy the ChaosEndpoint contract to Goerli
+- Save deployment data to `deployments/goerli/ChaosEndpoint.json`
+- Output verification instructions for Etherscan
+
+![Contract Deployment](images/contract_deployment.png)
+*[Screenshot placeholder: Contract deployment output and contract address]*
+
+### 2. Run the Full Staging Environment
+
+```bash
+# Start the staging environment and run the demo
+make boot-staging
+```
+
+This command will:
+- Copy the staging environment template
+- Update the contract address from the deployment
+- Start the Docker containers for the API, database, and SGX mock
+- Wait for the API to be healthy
+- Run the governance demo
+- Output and open the transaction hash in Etherscan
+
+![Governance Demo](images/governance_demo.png)
+*[Screenshot placeholder: Demo output with agent creation, actions, and outcomes]*
+
+![Etherscan Transaction](images/etherscan_tx.png)
+*[Screenshot placeholder: Etherscan transaction view]*
+
+## Demo Walkthrough
+
+The demo showcases the core capabilities of the ChaosCore Governance Studio:
+
+1. **Agent Registration**: Creates a governance agent with specific capabilities
+2. **Action Logging**: Records a governance action (performance analysis)
+3. **Outcome Recording**: Captures the results of the action
+4. **Studio Creation**: Establishes a specialized governance studio
+5. **Task Creation**: Defines a concrete governance task within the studio
+6. **SGX Enclave Simulation**: Demonstrates secure computation
+7. **Ethereum Anchoring**: Anchors action proofs to Goerli for verifiability
+8. **Reputation Updates**: Shows how agent reputation changes based on actions
+
+## Troubleshooting
+
+If you encounter issues with the demo, try the following:
+
+- Check that your `.env` file contains valid API keys and private key
+- Ensure you have sufficient Goerli ETH in your account
+- Verify all containers are running with `docker-compose -f docker-compose.staging.yml ps`
+- Check logs with `docker-compose -f docker-compose.staging.yml logs api`
+- Reset the environment with `make clean` before trying again
+
+## Next Steps
+
+After running the demo, you can:
+
+- Explore the API at `http://localhost:8000/docs`
+- View monitoring dashboards at `http://localhost:3000`
+- Examine the anchored data on Goerli Etherscan
+- Build your own governance workflows using the SDK
+
+For more information, contact the ChaosChain Labs team. 
