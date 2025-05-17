@@ -41,6 +41,7 @@ app.add_middleware(
 
 # Import routers
 from api_gateway.routers import agents, actions, studios, reputation
+from api_gateway.auth.jwt_auth import router as auth_router
 
 # Middleware to track request metrics
 @app.middleware("http")
@@ -50,17 +51,33 @@ async def metrics_middleware(request: Request, call_next):
     
     # Get endpoint path for metrics
     endpoint = request.url.path
+    method = request.method
+    
+    # Estimate request size
+    request_size = 0
+    if request.headers.get("content-length"):
+        request_size = int(request.headers.get("content-length", "0"))
     
     # Start timing the request
-    start_timer(request_id, endpoint)
+    start_timer(request_id, endpoint, method)
     
     # Process the request
-    response = await call_next(request)
-    
-    # End timing the request
-    end_timer(request_id)
-    
-    return response
+    try:
+        response = await call_next(request)
+        
+        # Estimate response size
+        response_size = 0
+        if hasattr(response, "headers") and response.headers.get("content-length"):
+            response_size = int(response.headers.get("content-length", "0"))
+        
+        # End timing the request
+        end_timer(request_id, response.status_code, request_size, response_size)
+        
+        return response
+    except Exception as e:
+        # End timing with error status
+        end_timer(request_id, 500, request_size, 0)
+        raise e
 
 # Root endpoint
 @app.get("/", tags=["Root"])
@@ -135,6 +152,7 @@ app.include_router(agents.router, prefix="/agents", tags=["Agents"])
 app.include_router(actions.router, prefix="/actions", tags=["Actions"])
 app.include_router(studios.router, prefix="/studios", tags=["Studios"])
 app.include_router(reputation.router, prefix="/reputation", tags=["Reputation"])
+app.include_router(auth_router)
 
 # Main entry point for running the application directly
 if __name__ == "__main__":
