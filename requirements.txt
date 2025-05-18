@@ -1,1 +1,6 @@
-sse-starlette>=1.6.5 
+sse-starlette>=1.6.5
+crewai==0.28.0
+langchain>=0.1.0
+openai>=1.0.0
+pydantic>=2.0.0
+web3>=6.0.0 
