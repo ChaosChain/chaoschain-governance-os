@@ -1,8 +1,7 @@
 # ChaosChain Governance OS
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Node.js 18+](https://img.shields.io/badge/node.js-18+-green.svg)](https://nodejs.org/)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Solidity ^0.8.17](https://img.shields.io/badge/solidity-^0.8.17-blue.svg)](https://soliditylang.org/)
 
 <p align="center">
@@ -24,8 +23,8 @@ ChaosChain is a cross-chain agentic governance operating system designed to enha
 - **Accelerate blockchain evolution** through AI-assisted governance and development
 - **Enable cross-chain knowledge sharing** and improvement propagation
 - **Provide rigorous simulation-based validation** for protocol changes with full verifiability
-- **Cryptographic verification:** agents run inside SGX (zkML coming) — anyone can audit the attestation
-- **Drop‑in for existing DAOs/L1s:** minimal endpoint contract or off‑chain adapter, no consensus changes
+- **Cryptographic verification:** agents run inside secure execution environments with attestation
+- **Drop‑in for existing DAOs/L1s:** minimal endpoint contract or off‑chain adapter integration
 - **Lower the barrier** to quality governance for blockchain ecosystems of any size
 
 ```mermaid
@@ -44,178 +43,142 @@ flowchart LR
 
 The ChaosChain Governance OS provides the following core capabilities:
 
-- **Cross-Chain Monitoring**: Monitor on-chain activity across various EVM-compatible chains
-- **AI-Powered Analysis**: Analyze blockchain data to identify potential governance improvements
-- **Governance Automation**: Generate and validate governance proposals using LLM-driven agents
-- **Multi-Chain Execution**: Submit validated proposals to different blockchains
+- **Autonomous Governance Agents**: AI-powered agents that analyze blockchain data and execute governance tasks
+- **On-Chain Data Analysis**: Real-time analysis of blockchain metrics and governance proposals
+- **Transparent Decision Making**: Verifiable decision processes with Proof of Agency receipts
+- **Secure Execution**: Execute governance tasks in secure, isolated environments
+- **Multi-Chain Compatibility**: Support for different EVM-compatible blockchains
 
-## Architecture
+## Key Components
 
-ChaosChain consists of several interconnected systems that work together to deliver AI-enhanced governance:
+### Autonomous Governance Agent
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        ChaosChain Platform                           │
-│                                                                     │
-│   ┌─────────────┐    ┌──────────────┐    ┌───────────────────────┐  │
-│   │ Agent       │    │ Verification │    │ Blockchain Endpoint   │  │
-│   │ Runtime     │◄─┐ │ Layer        │    │ Client                │  │
-│   │ - Framework │  │ │              │    │ - Chain adapters      │  │
-│   │   Agnostic  │  │ │              │    │ - Transaction signing │  │
-│   └─────────────┘  │ └──────────────┘    └───────────────────────┘  │
-│         ▲          │        ▲                       ▲               │
-│         │          │        │                       │               │
-│   ┌─────┴──────────┴─┐    ┌─┴──────────┐      ┌────┴──────────────┐ │
-│   │ Simulation       │    │ Reputation │      │ Incentive         │ │
-│   │ Environment      │    │ System     │      │ Mechanism         │ │
-│   └──────────────────┘    └────────────┘      └───────────────────┘ │
-└─────────────────────────────────────────────────────────────────────┘
-```
+The platform's cornerstone is the `GovernanceAnalystAgent`, which can:
 
-### Major Components
+1. Collect blockchain context data from multiple sources
+2. Autonomously decide which governance tasks to execute
+3. Securely execute tasks with verifiable outputs
+4. Generate cryptographically verifiable Proof of Agency receipts
+5. Anchor significant decisions to the blockchain
 
-1. **Agent Runtime**: Framework-agnostic inference engine for governance agents
-2. **Verification Layer**: Transparency and audit mechanisms with TEE (Trusted Execution Environment)
-3. **Blockchain Endpoint Client**: Chain-specific adapters for multiple blockchains
-4. **Simulation Environment**: Forked chain testing environments for proposal validation
-5. **Reputation System**: Performance tracking for agent contributions
+### Governance Tasks
 
-For detailed architecture documentation, see the [Implementation Plan](IMPLEMENTATION_PLAN.md) and [MVP Specification](docs/MVP_SPEC.md).
+The platform currently supports these governance tasks:
+
+- **GasParameterOptimizer**: Analyzes gas usage patterns and recommends optimal parameters
+- **ProposalSanityScanner**: Scans governance proposals for security issues and logical inconsistencies
+- **MEVCostEstimator**: Estimates potential MEV extraction costs for proposed changes
+
+### Blockchain Context Fetcher
+
+The `GoerliContextFetcher` enables connection to real Ethereum networks to fetch:
+
+- Recent blocks and their metrics
+- Active governance proposals
+- Gas price statistics and trends
 
 ## Getting Started
 
 ### Prerequisites
 
 - Python 3.12+
-- Node.js 18+ and npm
-- Access to an Ethereum RPC endpoint
-- (Optional) GPU for AI model acceleration
+- Web3.py and related dependencies
+- Access to an Ethereum RPC endpoint (optional for real data, mock mode available)
 
 ### Installation
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-organization/chaoschain-governance-os.git
+   git clone https://github.com/chaoschain/chaoschain-governance-os.git
    cd chaoschain-governance-os
    ```
 
 2. Set up Python environment:
    ```bash
-   python -m venv chaos
-   source chaos/bin/activate  # On Windows, use: chaos\Scripts\activate
-   pip install -e .
+   python -m venv venv
+   source venv/bin/activate  # On Windows, use: venv\Scripts\activate
+   pip install -r requirements.txt
    ```
 
-3. Install Ethereum dependencies:
+3. Set environment variables (optional for real blockchain data):
    ```bash
-   npm install
+   export ETHEREUM_MOCK=false  # Set to true for mock data
+   export ETHEREUM_PROVIDER_URL=your_ethereum_rpc_url
    ```
 
-4. Set up environment variables:
-   ```bash
-   export ETHEREUM_RPC_URL=your_ethereum_rpc_url
-   export OPENAI_API_KEY=your_openai_api_key  # If using OpenAI models
-   ```
+### Running the Governance Agent Demo
 
-### Running the Application
-
-#### Demo
-
-The simplest way to see the system in action is to run the demo script:
+Run the autonomous governance agent demo:
 
 ```bash
-# Run with default settings
-python demo.py
+# Run with agent decision-making
+python examples/governance_agent_autonomous.py
 
-# Run with verbose output
-python demo.py --verbose
-```
+# Specify a particular task
+python examples/governance_agent_autonomous.py --task GasParameterOptimizer
+python examples/governance_agent_autonomous.py --task ProposalSanityScanner
+python examples/governance_agent_autonomous.py --task MEVCostEstimator
 
-The demo uses mock data to simulate blockchain analysis and governance proposal generation.
-
-#### Agent Testing
-
-```bash
-# Run unit tests
-pytest tests/unit/
-
-# Run the quick demo
-python -m agent.quick_demo
-```
-
-#### Smart Contract Testing
-
-```bash
-# Compile contracts
-npx hardhat compile
-
-# Run contract tests
-npx hardhat test
+# Enable verbose output
+python examples/governance_agent_autonomous.py --verbose
 ```
 
 ## Project Structure
 
 ```
 chaoschain-governance-os/
-├── agent/                   # AI agent implementation
-│   ├── governance_crew.py   # Main governance crew implementation
-│   ├── tools/               # Agent tools for blockchain interaction
-│   └── models/              # Data models
-├── ethereum/                # Ethereum smart contracts
-│   ├── contracts/           # Solidity contracts
-│   └── test/                # Contract tests
-├── api/                     # API service
-├── tests/                   # Test suite
-│   ├── unit/                # Unit tests
-│   └── integration/         # Integration tests
-├── demo.py                  # Demo script
-└── docs/                    # Documentation
+├── agent/                            # Agent implementation
+│   ├── agents/                       # Agent definitions
+│   │   └── governance_analyst_agent.py  # Main agent implementation
+│   ├── blockchain/                   # Blockchain interfaces
+│   │   └── context_fetcher.py        # Context fetching from blockchains
+│   ├── tasks/                        # Governance tasks
+│   │   ├── gas_parameter_optimizer.py  # Gas parameter optimization
+│   │   ├── mev_cost_estimator.py     # MEV cost estimation
+│   │   └── proposal_sanity_scanner.py  # Proposal security scanning
+│   ├── mock_*.py                     # Mock components for testing
+│   └── task_registry.py              # Task registration system
+├── examples/                         # Example scripts
+│   └── governance_agent_autonomous.py  # Autonomous agent demo
+├── tests/                            # Test suite
+├── requirements.txt                  # Python dependencies
+└── pyproject.toml                    # Project configuration
 ```
 
 ## Technology Stack
 
-- **Agent Framework**: CrewAI + LangChain
-- **Blockchain Interaction**: Web3.py, Hardhat
-- **AI Models**: Compatible with OpenAI, Anthropic Claude, and other providers
-- **Smart Contracts**: Solidity
-- **API**: FastAPI
+- **Agent Framework**: Compatible with CrewAI and LangChain
+- **Blockchain Interaction**: Web3.py
+- **AI Models**: Compatible with various LLM providers
+
+## Recent Developments
+
+### Sprint 7: Governance Agent Context Fetching
+
+- Implemented `GoerliContextFetcher` for real blockchain data integration
+- Enhanced task system to properly handle different data structures
+- Improved agent decision making with fallbacks and error handling
+- Added demonstration of autonomous governance operations
 
 ## Contributing
 
-Contributions are welcome! Please check out our [contribution guidelines](CONTRIBUTING.md) for details.
+Contributions are welcome! To contribute:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'S#: Add some amazing feature'`) where # is the sprint number
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- [CrewAI](https://github.com/joaomdmoura/crewAI) - Agent collaboration framework
-- [LangChain](https://github.com/hwchase17/langchain) - LLM framework
-- [Web3.py](https://github.com/ethereum/web3.py) - Ethereum interface
-- [Hardhat](https://github.com/nomiclabs/hardhat) - Ethereum development environment
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## 📚 Documentation
 
 - [Implementation Plan](IMPLEMENTATION_PLAN.md): Comprehensive project overview and roadmap
 - [MVP Specification](docs/MVP_SPEC.md): Minimum Viable Product details
 - Architecture documents: Found in the [docs/architecture](docs/architecture) directory
-
-## Contributing
-
-We welcome contributions from the community! To contribute:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-Please ensure your code follows our style guidelines and includes appropriate tests.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Overview
 
@@ -362,8 +325,4 @@ The ChaosChain Governance OS is built on the ChaosCore platform, which provides 
 3. Simulations run in the Secure Execution Environment
 4. Results are anchored to Ethereum
 5. Agent reputation is updated based on outcomes
-
-## License
-
-MIT
 

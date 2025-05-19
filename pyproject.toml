@@ -19,7 +19,7 @@ classifiers = [
 requires-python = ">=3.12"
 dependencies = [
     "langchain>=0.1.0",
-    "crewai>=0.28.0",
+    "crewai==0.28.0",
     "web3>=6.0.0",
     "pydantic>=2.0.0",
     "fastapi>=0.100.0",
@@ -44,9 +44,9 @@ dev = [
 [tool.setuptools]
 packages = [
     "agent",
-    "agent.crew",
-    "agent.crew.researcher",
-    "agent.crew.developer", 
+    "agent.agents",
+    "agent.agents.researcher",
+    "agent.agents.developer", 
     "agent.runtime",
     "agent.tools",
     "verification",
