@@ -91,3 +91,4 @@ docs/ROADMAP.md
 docs/sprint_backlog.md
 Chaos_lite.md
 IMPLEMENTATION_PLAN.md
+deployments/.env.staging

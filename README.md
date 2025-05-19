@@ -238,5 +238,5 @@ The ChaosChain Governance OS is a governance platform that combines AI agents, s
 Start the entire stack:
 
 ```bash
-docker compose up -d
+docker-compose up -d
 ```

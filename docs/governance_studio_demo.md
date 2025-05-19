@@ -79,8 +79,8 @@ If you encounter issues with the demo, try the following:
 
 - Check that your `.env.sepolia` file contains valid API keys and private key
 - Ensure you have sufficient Sepolia ETH in your account
-- Verify all containers are running with `docker compose -f docker-compose.sepolia.yml ps`
-- Check logs with `docker compose -f docker-compose.sepolia.yml logs api`
+- Verify all containers are running with `docker-compose -f docker-compose.sepolia.yml ps`
+- Check logs with `docker-compose -f docker-compose.sepolia.yml logs api`
 - Reset the environment with `make clean` before trying again
 
 ## Next Steps

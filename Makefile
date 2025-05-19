@@ -16,8 +16,8 @@ help:
 deploy-sepolia:
 	@echo "Deploying contracts to Sepolia testnet..."
 	@set -a ; source deployments/.env.sepolia ; set +a
-	@if [ -z "$$RPC_URL" ]; then echo "ERROR: RPC_URL is empty in .env.sepolia"; exit 1; fi
-	@if [ -z "$$PRIVATE_KEY" ]; then echo "ERROR: PRIVATE_KEY is empty in .env.sepolia"; exit 1; fi
+	@if [ -z "$${RPC_URL}" ]; then echo "ERROR: RPC_URL is empty in .env.sepolia"; exit 1; fi
+	@if [ -z "$${PRIVATE_KEY}" ]; then echo "ERROR: PRIVATE_KEY is empty in .env.sepolia"; exit 1; fi
 	npx hardhat run --network sepolia deployments/hardhat/deploy_endpoint.js
 	@echo "Deployment completed"
 
@@ -70,7 +70,7 @@ prepare-staging:
 # Boot Sepolia environment
 boot-sepolia: prepare-sepolia
 	@echo "Booting environment on Sepolia..."
-	docker compose -f docker-compose.sepolia.yml up -d
+	docker-compose -f docker-compose.sepolia.yml up -d
 	$(MAKE) wait-api
 	@echo "Running governance demo..."
 	python examples/sdk_gateway_demo_http.py --stage --anchor-eth --network sepolia
@@ -85,19 +85,19 @@ boot-sepolia: prepare-sepolia
 boot-staging: prepare-staging
 	@echo "DEPRECATED: Please use boot-sepolia instead"
 	@echo "Booting environment on Sepolia..."
-	docker compose -f docker-compose.sepolia.yml up -d
+	docker-compose -f docker-compose.sepolia.yml up -d
 	@echo "Waiting for API to be healthy..."
 	@timeout=60; \
-	while [ $$timeout -gt 0 ]; do \
+	while [ $${timeout} -gt 0 ]; do \
 		if curl -s http://localhost:8000/health > /dev/null 2>&1; then \
 			echo "API is healthy!"; \
 			break; \
 		fi; \
-		echo "Waiting for API to be healthy ($$timeout seconds left)..."; \
+		echo "Waiting for API to be healthy ($${timeout} seconds left)..."; \
 		sleep 5; \
 		timeout=$$((timeout - 5)); \
-	done
-	@if [ $$timeout -le 0 ]; then \
+	done; \
+	if [ $${timeout} -le 0 ]; then \
 		echo "Error: API failed to become healthy within timeout"; \
 		exit 1; \
 	fi
@@ -113,6 +113,6 @@ boot-staging: prepare-staging
 # Clean up resources
 clean:
 	@echo "Cleaning up..."
-	docker compose -f docker-compose.sepolia.yml down
+	docker-compose -f docker-compose.sepolia.yml down
 	rm -f tx_hash.txt
 	@echo "Cleanup completed" 
