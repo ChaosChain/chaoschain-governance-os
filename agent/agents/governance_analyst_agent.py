@@ -75,6 +75,8 @@ from agent.tasks import (
     ProposalSanityScanner,
     MEVCostEstimator
 )
+from agent.blockchain.proposal_iterator import ProposalIterator
+from agent.blockchain.task_result import TaskResult
 
 logger = logging.getLogger(__name__)
 
@@ -701,8 +703,8 @@ class GovernanceAnalystAgent:
         """
         Makes a decision about which governance task to run and executes it.
         
-        This method fetches blockchain data, decides which task to execute based on the data,
-        and then executes the task in the secure environment.
+        This method fetches blockchain data, checks for governance proposals,
+        and either analyzes them or falls back to gas parameter optimization.
         
         Args:
             task_type: Optional specific task to run instead of automatically deciding
@@ -716,9 +718,57 @@ class GovernanceAnalystAgent:
             # Use the collect_context method to get blockchain data
             context = self._collect_context()
             
-            # Make a decision (usually this would be done by the CrewAI agent)
-            # If a specific task_type is provided, use that instead of deciding
-            if task_type and task_type in self.get_available_tasks():
+            # Check if we have proposals to analyze
+            has_proposals = (
+                "governance_proposals" in context.get("blockchain_data", {}) and 
+                len(context["blockchain_data"]["governance_proposals"]) > 0
+            )
+            
+            # If we have proposals and no specific task is requested, analyze proposals
+            if has_proposals and not task_type:
+                logger.info("Found governance proposals to analyze")
+                
+                # Create a proposal iterator
+                iterator = ProposalIterator(
+                    secure_execution_env=self.secure_env,
+                    proof_of_agency=self.poa
+                )
+                
+                # Get all proposals from the context
+                proposals = context["blockchain_data"]["governance_proposals"]
+                
+                # Analyze all proposals
+                analysis_results = []
+                task_results = []
+                
+                for proposal in proposals:
+                    proposal_result = iterator.analyze_proposal(proposal, use_markdown=True)
+                    analysis_results.append(proposal_result)
+                    
+                    # Create a TaskResult object for each analysis
+                    if proposal_result.get("success", False):
+                        task_result = TaskResult.from_task_output(
+                            task_id=f"proposal-analysis-{proposal.get('id', 'unknown')}",
+                            task_name="ProposalAnalysis",
+                            output=proposal_result,
+                            markdown_summary=proposal_result.get("markdown_summary")
+                        )
+                        task_results.append(task_result)
+                
+                # Return the combined results
+                return {
+                    "execution_results": {
+                        "success": len(analysis_results) > 0,
+                        "proposal_analyses": analysis_results,
+                        "task_results": [result.to_dict() for result in task_results]
+                    },
+                    "selected_task": "ProposalAnalysis",
+                    "proposal_count": len(proposals),
+                    "analysis_count": len(analysis_results)
+                }
+            
+            # Otherwise use the decision logic or specified task
+            elif task_type and task_type in self.get_available_tasks():
                 logger.info(f"Using specified task: {task_type}")
                 if task_type == "GasParameterOptimizer":
                     task_decision = {
@@ -737,13 +787,13 @@ class GovernanceAnalystAgent:
                                 "network_congestion": 0.5,
                                 "proposal_type": "standard",
                                 "timestamp": int(time.time()),
-                                "network": "ethereum"
+                                "network": "goerli"
                             }
                         }
                     }
-                elif task_type == "ProposalSanityScanner":
+                elif task_type == "ProposalSanityScanner" and has_proposals:
                     # Get the first proposal for demonstration
-                    proposal = context["blockchain_data"]["governance_proposals"][0] if context["blockchain_data"]["governance_proposals"] else {}
+                    proposal = context["blockchain_data"]["governance_proposals"][0]
                     task_decision = {
                         "task_name": task_type,
                         "execution_context": {
@@ -751,7 +801,7 @@ class GovernanceAnalystAgent:
                                 "proposal_data": proposal,
                                 "proposal_history": [],
                                 "governance_contract": {
-                                    "address": "0x1234567890123456789012345678901234567890",
+                                    "address": proposal.get("contract_address", "0x0000000000000000000000000000000000000000"),
                                     "type": "governor"
                                 },
                                 "proposal_author": proposal.get("proposer", "0x0000000000000000000000000000000000000000")
@@ -764,32 +814,7 @@ class GovernanceAnalystAgent:
                                 "protocol_parameters": context["blockchain_data"]["protocol_parameters"],
                                 "known_vulnerabilities": [],
                                 "timestamp": int(time.time()),
-                                "network": "ethereum"
-                            }
-                        }
-                    }
-                elif task_type == "MEVCostEstimator":
-                    task_decision = {
-                        "task_name": task_type,
-                        "execution_context": {
-                            "blockchain": {
-                                "recent_blocks": context["blockchain_data"]["recent_blocks"],
-                                "gas_prices": context["blockchain_data"]["gas_prices"],
-                                "mempool_data": context["blockchain_data"]["mempool_data"]
-                            },
-                            "governance": {
-                                "proposal_data": {
-                                    "id": "mock-proposal-1",
-                                    "type": "parameter_update",
-                                    "parameters": context["blockchain_data"]["protocol_parameters"]
-                                },
-                                "protocol_parameters": context["blockchain_data"]["protocol_parameters"]
-                            },
-                            "defi": {
-                                "trading_pairs": [],
-                                "pool_liquidity": {},
-                                "volume_data": {},
-                                "active_bots": []
+                                "network": "goerli"
                             }
                         }
                     }
@@ -812,6 +837,17 @@ class GovernanceAnalystAgent:
                     task_name=task_name,
                     context=execution_context
                 )
+                
+                # Create a TaskResult with markdown summary
+                if execution_results.get("success", False):
+                    task_result = TaskResult.from_task_output(
+                        task_id=execution_results.get("task_id", f"task-{task_name}"),
+                        task_name=task_name,
+                        output=execution_results
+                    )
+                    
+                    # Add the task result to the execution results
+                    execution_results["task_result"] = task_result.to_dict()
             else:
                 logger.error("execute_task tool not found in blockchain_tools")
                 execution_results = {
@@ -838,8 +874,9 @@ class GovernanceAnalystAgent:
         """
         Decide which task to execute based on blockchain data.
         
-        In a production system, this would use the CrewAI agent to make a decision.
-        For this implementation, we'll use simple heuristics.
+        This method first checks if there are any active governance proposals
+        to analyze. If there are, it iterates through the proposals.
+        If not, it falls back to GasParameterOptimizer to optimize gas parameters.
         
         Args:
             context: Context containing blockchain data
@@ -849,8 +886,49 @@ class GovernanceAnalystAgent:
         """
         blockchain_data = context.get("blockchain_data", {})
         
-        # Simple heuristic: if we have gas price data, optimize gas parameters
-        if "gas_prices" in blockchain_data and len(blockchain_data.get("gas_prices", [])) > 0:
+        # Check if we have governance proposals to analyze
+        if "governance_proposals" in blockchain_data and len(blockchain_data.get("governance_proposals", [])) > 0:
+            logger.info("Found governance proposals to analyze")
+            
+            # Create a proposal iterator
+            iterator = ProposalIterator(
+                secure_execution_env=self.secure_env,
+                proof_of_agency=self.poa
+            )
+            
+            # Use the first proposal for the task's context structure
+            proposals = blockchain_data.get("governance_proposals", [])
+            proposal = proposals[0] if proposals else {}
+            
+            return {
+                "task_name": "ProposalSanityScanner",
+                "execution_context": {
+                    # Structure context to match what ProposalSanityScanner requires
+                    "governance": {
+                        "proposal_data": proposal,
+                        "proposal_history": [],  # Add empty placeholder for required field
+                        "governance_contract": {
+                            "address": proposal.get("contract_address", "0x1234567890123456789012345678901234567890"),
+                            "type": "governor"
+                        },
+                        "proposal_author": proposal.get("proposer", "0x0000000000000000000000000000000000000000")
+                    },
+                    "blockchain": {
+                        "contract_bytecode": {},  # Add empty placeholder for required field
+                        "account_history": {}  # Add empty placeholder for required field
+                    },
+                    "context": {
+                        "protocol_parameters": blockchain_data.get("protocol_parameters", {}),
+                        "known_vulnerabilities": [],  # Add empty placeholder for required field
+                        "timestamp": int(time.time()),
+                        "network": "goerli"
+                    }
+                }
+            }
+        
+        # Fallback to GasParameterOptimizer if no proposals are found
+        else:
+            logger.info("No governance proposals found, falling back to GasParameterOptimizer")
             return {
                 "task_name": "GasParameterOptimizer",
                 "execution_context": {
@@ -868,67 +946,7 @@ class GovernanceAnalystAgent:
                         "network_congestion": 0.5,  # Add required field
                         "proposal_type": "standard",  # Add helpful field
                         "timestamp": int(time.time()),
-                        "network": "ethereum"
-                    }
-                }
-            }
-        
-        # If we have governance proposals, scan them for issues
-        elif "governance_proposals" in blockchain_data and len(blockchain_data.get("governance_proposals", [])) > 0:
-            # Get the first proposal for demonstration
-            proposals = blockchain_data.get("governance_proposals", [])
-            proposal = proposals[0] if proposals else {}
-            
-            return {
-                "task_name": "ProposalSanityScanner",
-                "execution_context": {
-                    # Structure context to match what ProposalSanityScanner requires
-                    "governance": {
-                        "proposal_data": proposal,
-                        "proposal_history": [],  # Add empty placeholder for required field
-                        "governance_contract": {
-                            "address": "0x1234567890123456789012345678901234567890",
-                            "type": "governor"
-                        },
-                        "proposal_author": proposal.get("proposer", "0x0000000000000000000000000000000000000000")
-                    },
-                    "blockchain": {
-                        "contract_bytecode": {},  # Add empty placeholder for required field
-                        "account_history": {}  # Add empty placeholder for required field
-                    },
-                    "context": {
-                        "protocol_parameters": blockchain_data.get("protocol_parameters", {}),
-                        "known_vulnerabilities": [],  # Add empty placeholder for required field
-                        "timestamp": int(time.time()),
-                        "network": "ethereum"
-                    }
-                }
-            }
-        
-        # Default to MEV cost estimation
-        else:
-            return {
-                "task_name": "MEVCostEstimator",
-                "execution_context": {
-                    # Structure context to match what MEVCostEstimator requires
-                    "blockchain": {
-                        "recent_blocks": blockchain_data.get("recent_blocks", []),
-                        "gas_prices": blockchain_data.get("gas_prices", []),
-                        "mempool_data": blockchain_data.get("mempool_data", {})
-                    },
-                    "governance": {
-                        "proposal_data": {
-                            "id": "mock-proposal-1",
-                            "type": "parameter_update",
-                            "parameters": blockchain_data.get("protocol_parameters", {})
-                        },
-                        "protocol_parameters": blockchain_data.get("protocol_parameters", {})
-                    },
-                    "defi": {
-                        "trading_pairs": [],  # Add empty placeholder for required field
-                        "pool_liquidity": {},  # Add empty placeholder for required field
-                        "volume_data": {},    # Add empty placeholder for required field
-                        "active_bots": []     # Add empty placeholder for required field
+                        "network": "goerli"
                     }
                 }
             }

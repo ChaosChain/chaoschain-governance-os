@@ -40,7 +40,7 @@ app.add_middleware(
 )
 
 # Import routers
-from api_gateway.routers import agents, actions, studios, reputation
+from api_gateway.routers import agents, actions, studios, reputation, impact_labels
 from api_gateway.auth.jwt_auth import router as auth_router
 
 # Middleware to track request metrics
@@ -152,6 +152,7 @@ app.include_router(agents.router, prefix="/agents", tags=["Agents"])
 app.include_router(actions.router, prefix="/actions", tags=["Actions"])
 app.include_router(studios.router, prefix="/studios", tags=["Studios"])
 app.include_router(reputation.router, prefix="/reputation", tags=["Reputation"])
+app.include_router(impact_labels.router, prefix="/impact_labels", tags=["Impact Labels"])
 app.include_router(auth_router)
 
 # Main entry point for running the application directly
