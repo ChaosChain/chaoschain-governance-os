@@ -83,6 +83,16 @@ If you encounter issues with the demo, try the following:
 - Check logs with `docker-compose -f docker-compose.sepolia.yml logs api`
 - Reset the environment with `make clean` before trying again
 
+### Docker Command Notes
+
+This project uses the hyphenated `docker-compose` command, which is the legacy standalone version.
+If you have Docker Desktop installed with Docker Compose V2, you might be used to the `docker compose` 
+format (without hyphen). If you want to switch to that format:
+
+1. Ensure Docker Compose V2 is properly installed as a plugin
+2. Edit the Makefile to replace all instances of `docker-compose` with `docker compose`
+3. Update any shell scripts accordingly
+
 ## Next Steps
 
 After running the demo, you can:
