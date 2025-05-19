@@ -27,10 +27,10 @@ if [ ! -d "frontend/dist" ]; then
   echo
 fi
 
-# Start the Docker services
-echo_color $YELLOW "Starting services..."
-docker-compose -f scripts/docker-compose.demo.yml build
-docker-compose -f scripts/docker-compose.demo.yml up -d
+# Build and start the demo containers
+echo_color $GREEN "Building and starting demo containers..."
+docker compose -f scripts/docker-compose.demo.yml build
+docker compose -f scripts/docker-compose.demo.yml up -d
 echo_color $GREEN "Services started successfully."
 echo
 
@@ -52,9 +52,9 @@ done
 echo_color $GREEN "API service is ready."
 echo
 
-# Run the demo script
-echo_color $YELLOW "Executing demo script..."
-docker-compose -f scripts/docker-compose.demo.yml exec api python demo.py
+# Run the demo inside the API container
+echo_color $GREEN "Running demo inside API container..."
+docker compose -f scripts/docker-compose.demo.yml exec api python demo.py
 echo_color $GREEN "Demo script executed successfully."
 echo
 
@@ -67,11 +67,10 @@ echo_color $GREEN "📊 UI Dashboard:    http://localhost:8080/ui"
 echo_color $GREEN "🚀 API Endpoints:   http://localhost:8000/docs"
 echo_color $GREEN "⛓️ Ethereum Node:   http://localhost:8545"
 echo
-echo_color $YELLOW "To view logs, run:"
-echo_color $YELLOW "docker-compose -f scripts/docker-compose.demo.yml logs -f"
-echo
-echo_color $YELLOW "To stop the demo, run:"
-echo_color $YELLOW "docker-compose -f scripts/docker-compose.demo.yml down"
+echo_color $YELLOW "To view logs:"
+echo_color $YELLOW "docker compose -f scripts/docker-compose.demo.yml logs -f"
+echo_color $YELLOW "To cleanup:"
+echo_color $YELLOW "docker compose -f scripts/docker-compose.demo.yml down"
 echo
 echo_color $CYAN "Open your browser to view the dashboard: http://localhost:8080/ui"
 echo_color $CYAN "=================================" 

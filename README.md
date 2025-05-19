@@ -198,62 +198,45 @@ The ChaosChain Governance OS is a governance platform that combines AI agents, s
 
 - Python 3.10+
 - Docker and Docker Compose
-- Node.js 16+ (for Ethereum development)
+- Node.js and npm (for Ethereum contract deployment)
+- An Ethereum account with Sepolia ETH (for testnet deployment)
 
-### Local Development Setup
+### Quick Start
 
 1. Clone the repository:
+   ```bash
+   git clone https://github.com/chaoschain/chaoschain-governance-os.git
+   cd chaoschain-governance-os
+   ```
+
+2. Set up environment:
+   ```bash
+   # Copy the Sepolia environment example
+   cp deployments/.env.sepolia.example deployments/.env.sepolia
+   
+   # Edit with your actual values
+   nano deployments/.env.sepolia  # Add your RPC_URL and PRIVATE_KEY
+   ```
+
+3. Deploy the contract to Sepolia testnet:
+   ```bash
+   make deploy-sepolia
+   ```
+
+4. Run the full demo stack:
+   ```bash
+   make boot-sepolia
+   ```
+
+5. Access the API documentation:
+   ```
+   http://localhost:8000/docs
+   ```
+
+### Running with Docker
+
+Start the entire stack:
+
 ```bash
-git clone https://github.com/chaoschain/chaoschain-governance-os.git
-cd chaoschain-governance-os
-```
-
-2. Install dependencies:
-```bash
-pip install -e .
-```
-
-3. Run the demo:
-```bash
-python demo_governance_flow.py
-```
-
-### Staging Environment
-
-The staging environment is a production-like environment used for testing. It includes:
-
-- PostgreSQL for persistent storage
-- SGX dev-container for secure execution
-- Sepolia testnet for blockchain anchoring
-- Prometheus and Grafana for monitoring
-
-#### Setting Up Staging
-
-1. Start the staging environment:
-```bash
-docker-compose up -d
-```
-
-2. The following services will be available:
-   - ChaosCore API: http://localhost:8000
-   - PostgreSQL: localhost:5432
-   - SGX Enclave: http://localhost:7000
-   - Prometheus: http://localhost:9090
-   - Grafana: http://localhost:3000 (username: admin, password: admin)
-
-3. Environment variables for connecting to services:
-```
-# PostgreSQL
-POSTGRES_USER=chaoscore
-POSTGRES_PASSWORD=chaoscore_pass
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-POSTGRES_DB=chaoscore
-
-# SGX Enclave
-SGX_ENCLAVE_URL=http://localhost:7000
-
-# Ethereum (Sepolia)
-ETHEREUM_PROVIDER_URL=https://sepolia.infura.io/v3/your-api-key
-ETHEREUM_CONTRACT_ADDRESS=0x1234567890123456789012345678901234567890
+docker compose up -d
 ```

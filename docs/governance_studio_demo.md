@@ -8,18 +8,19 @@ This document describes how to run the ChaosCore Governance Studio demonstration
 - Hardhat
 - Docker & Docker Compose
 - Python 3.9+
-- Infura API key (for Sepolia access)
+- Alchemy API key (for Sepolia access)
 - Ethereum account with private key (with some Sepolia ETH)
 
 ## Environment Setup
 
-1. Set up your environment variables in a `.env` file in the project root:
+1. Set up your environment variables in a `.env.sepolia` file in the deployments directory:
 
 ```bash
-INFURA_API_KEY=your_infura_api_key
-PRIVATE_KEY=your_ethereum_private_key
-ETHERSCAN_API_KEY=your_etherscan_api_key
+RPC_URL=https://eth-sepolia.g.alchemy.com/v2/your-api-key
+PRIVATE_KEY=your64characterprivatekeywithout0xprefix
 ```
+
+You can use the template provided in `deployments/.env.sepolia.example`.
 
 ## Deployment Process
 
@@ -38,15 +39,15 @@ This will:
 ![Contract Deployment](images/contract_deployment.png)
 *[Screenshot placeholder: Contract deployment output and contract address]*
 
-### 2. Run the Full Staging Environment
+### 2. Run the Full Sepolia Environment
 
 ```bash
-# Start the staging environment and run the demo
-make boot-staging
+# Start the Sepolia environment and run the demo
+make boot-sepolia
 ```
 
 This command will:
-- Copy the staging environment template
+- Copy the Sepolia environment template
 - Update the contract address from the deployment
 - Start the Docker containers for the API, database, and SGX mock
 - Wait for the API to be healthy
@@ -76,10 +77,10 @@ The demo showcases the core capabilities of the ChaosCore Governance Studio:
 
 If you encounter issues with the demo, try the following:
 
-- Check that your `.env` file contains valid API keys and private key
+- Check that your `.env.sepolia` file contains valid API keys and private key
 - Ensure you have sufficient Sepolia ETH in your account
-- Verify all containers are running with `docker-compose -f docker-compose.sepolia.yml ps`
-- Check logs with `docker-compose -f docker-compose.sepolia.yml logs api`
+- Verify all containers are running with `docker compose -f docker-compose.sepolia.yml ps`
+- Check logs with `docker compose -f docker-compose.sepolia.yml logs api`
 - Reset the environment with `make clean` before trying again
 
 ## Next Steps
