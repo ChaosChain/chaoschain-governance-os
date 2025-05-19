@@ -38,6 +38,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
+# Install the package in development mode
+RUN pip install -e .
+
 # Build wheel packages for dependencies
 RUN pip wheel --no-cache-dir --wheel-dir=/app/wheels -r requirements.txt
 
@@ -85,7 +88,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
 # Set labels
 LABEL org.opencontainers.image.title="ChaosCore API Gateway" \
       org.opencontainers.image.description="API Gateway for ChaosCore platform" \
-      org.opencontainers.image.version="0.1.0" \
+      org.opencontainers.image.version="0.1.1" \
       org.opencontainers.image.source="https://github.com/ChaosChain/chaoschain-governance-os" \
       org.opencontainers.image.authors="ChaosChain Labs" \
       org.opencontainers.image.created="$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \

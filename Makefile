@@ -70,15 +70,24 @@ prepare-staging:
 # Boot Sepolia environment
 boot-sepolia: prepare-sepolia
 	@echo "Booting environment on Sepolia..."
+	docker-compose -f docker-compose.sepolia.yml build api
 	docker-compose -f docker-compose.sepolia.yml up -d
 	$(MAKE) wait-api
 	@echo "Running governance demo..."
 	python examples/sdk_gateway_demo_http.py --stage --anchor-eth --network sepolia
 	@echo "Demo completed"
-	@if [ -f tx_hash.txt ]; then \
-		echo "🟢 Sepolia anchor OK – tx: $$(cat tx_hash.txt)"; \
-		echo "Etherscan URL: https://sepolia.etherscan.io/tx/$$(cat tx_hash.txt)"; \
-		open "https://sepolia.etherscan.io/tx/$$(cat tx_hash.txt)" || echo "Open URL manually: https://sepolia.etherscan.io/tx/$$(cat tx_hash.txt)"; \
+	@if [ -f tx_hash.txt ] && [ -s tx_hash.txt ]; then \
+		ANCHOR_STATUS=$$(curl -s -o /dev/null -w "%{http_code}" https://sepolia.etherscan.io/tx/$$(cat tx_hash.txt)); \
+		if [ "$$ANCHOR_STATUS" = "200" ] || [ "$$ANCHOR_STATUS" = "201" ]; then \
+			echo "🟢 Sepolia anchor OK – tx: $$(cat tx_hash.txt)"; \
+			echo "Etherscan URL: https://sepolia.etherscan.io/tx/$$(cat tx_hash.txt)"; \
+			open "https://sepolia.etherscan.io/tx/$$(cat tx_hash.txt)" || echo "Open URL manually: https://sepolia.etherscan.io/tx/$$(cat tx_hash.txt)"; \
+		else \
+			echo "⚠️ Anchoring transaction exists but status check failed ($$ANCHOR_STATUS)"; \
+			echo "Etherscan URL: https://sepolia.etherscan.io/tx/$$(cat tx_hash.txt)"; \
+		fi; \
+	else \
+		echo "⛔ No transaction hash found - anchoring may have failed"; \
 	fi
 
 # Boot staging environment (DEPRECATED)

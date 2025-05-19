@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Core services
   api:
@@ -48,7 +46,7 @@ services:
       context: ./tools/sgx-mock
       dockerfile: Dockerfile
     ports:
-      - "7000:7000"
+      - "7001:7000"
     environment:
       - SGX_SIMULATION=true
     volumes:
