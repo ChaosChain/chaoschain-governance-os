@@ -58,7 +58,7 @@
 1. **Staging Environment**: The current implementation uses in-memory components even in staging mode. For a real staging environment, we should:
    - Connect to a PostgreSQL database for persistent storage
    - Use a proper TEE service for secure execution
-   - Connect to Goerli testnet for anchoring
+   - Connect to Sepolia testnet for anchoring
 
 2. **SDK Improvements**:
    - Add more comprehensive error handling

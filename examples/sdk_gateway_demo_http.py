@@ -78,7 +78,7 @@ def main():
     parser = argparse.ArgumentParser(description="ChaosCore SDK Gateway Demo")
     parser.add_argument("--stage", action="store_true", help="Use staging environment (testnet)")
     parser.add_argument("--anchor-eth", action="store_true", help="Anchor proofs to Ethereum")
-    parser.add_argument("--network", default="sepolia", choices=["sepolia", "goerli"], help="Ethereum network to use (default: sepolia)")
+    parser.add_argument("--network", default="sepolia", help="Ethereum network to use (default: sepolia)")
     args = parser.parse_args()
     
     print("=== ChaosCore SDK Gateway Demo (HTTP-first) ===\n")
@@ -273,7 +273,7 @@ def main():
         tx_hash = anchor_to_ethereum(enclave_hash, use_staging=args.stage, network=args.network)
         time.sleep(2)
         
-        explorer_url = f"{SEPOLIA_EXPLORER_URL}{tx_hash}" if args.network == "sepolia" else f"https://{'goerli' if args.network == 'goerli' else 'mainnet'}.etherscan.io/tx/{tx_hash}"
+        explorer_url = f"{SEPOLIA_EXPLORER_URL}{tx_hash}" if args.network == "sepolia" else f"https://etherscan.io/tx/{tx_hash}"
         print(f"Proof anchored successfully.")
         print(f"Transaction hash: {tx_hash}")
         print(f"View on Etherscan: {explorer_url}")
@@ -306,7 +306,7 @@ def main():
     print("Summary:")
     print(f"  • Enclave Hash: {enclave_hash}")
     if args.anchor_eth:
-        print(f"  • Ethereum TX: {tx_hash} (on {'Sepolia' if args.network == 'sepolia' else 'Goerli' if args.network == 'goerli' else 'Mainnet'})")
+        print(f"  • Ethereum TX: {tx_hash} (on {'Sepolia' if args.network == 'sepolia' else 'Mainnet'})")
         print(f"  • TX Explorer: {explorer_url}")
     print(f"  • Reputation Δ: {reputation_delta:+.4f}")
 

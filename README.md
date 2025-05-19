@@ -71,7 +71,7 @@ The platform currently supports these governance tasks:
 
 ### Blockchain Context Fetcher
 
-The `GoerliContextFetcher` enables connection to real Ethereum networks to fetch:
+The `EthereumContextFetcher` enables connection to real Ethereum networks to fetch:
 
 - Recent blocks and their metrics
 - Active governance proposals
@@ -155,7 +155,7 @@ chaoschain-governance-os/
 
 ### Sprint 7: Governance Agent Context Fetching
 
-- Implemented `GoerliContextFetcher` for real blockchain data integration
+- Implemented `EthereumContextFetcher` for real blockchain data integration
 - Enhanced task system to properly handle different data structures
 - Improved agent decision making with fallbacks and error handling
 - Added demonstration of autonomous governance operations
@@ -224,7 +224,7 @@ The staging environment is a production-like environment used for testing. It in
 
 - PostgreSQL for persistent storage
 - SGX dev-container for secure execution
-- Goerli testnet for blockchain anchoring
+- Sepolia testnet for blockchain anchoring
 - Prometheus and Grafana for monitoring
 
 #### Setting Up Staging
@@ -253,76 +253,7 @@ POSTGRES_DB=chaoscore
 # SGX Enclave
 SGX_ENCLAVE_URL=http://localhost:7000
 
-# Ethereum (Goerli)
-ETHEREUM_PROVIDER_URL=https://goerli.infura.io/v3/your-api-key
+# Ethereum (Sepolia)
+ETHEREUM_PROVIDER_URL=https://sepolia.infura.io/v3/your-api-key
 ETHEREUM_CONTRACT_ADDRESS=0x1234567890123456789012345678901234567890
 ```
-
-4. Run the demo in staging mode:
-```bash
-python demo_governance_flow.py --stage
-```
-
-## Testing
-
-### Run Tests
-```bash
-pytest tests/
-```
-
-### Run Linting
-```bash
-black .
-isort .
-flake8 .
-```
-
-## SDK
-
-The ChaosCore SDK can be used to interact with the platform:
-
-```python
-from chaoscore.sdk.python import ChaosCoreClient
-
-# Create a client
-client = ChaosCoreClient()
-
-# Register an agent
-agent_id = client.register_agent(
-    name="Parameter Optimizer",
-    email="optimizer@example.com",
-    metadata={"role": "developer"}
-)
-
-# Log an action
-action_id = client.log_action(
-    agent_id=agent_id,
-    action_type="OPTIMIZE",
-    description="Optimize gas parameters"
-)
-```
-
-## Monitoring
-
-The platform includes monitoring tools to track system metrics:
-
-- **Prometheus**: Collects metrics at http://localhost:9090
-- **Grafana**: Visualizes metrics at http://localhost:3000
-
-The dashboard visualizes:
-- Agent count
-- Action count
-- Simulation count
-- Anchoring operations
-- API performance
-
-## Architecture
-
-The ChaosChain Governance OS is built on the ChaosCore platform, which provides core infrastructure for governance operations:
-
-1. Agents are registered in the Agent Registry
-2. Agent actions are logged through Proof of Agency
-3. Simulations run in the Secure Execution Environment
-4. Results are anchored to Ethereum
-5. Agent reputation is updated based on outcomes
-

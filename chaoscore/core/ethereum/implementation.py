@@ -57,7 +57,7 @@ class EthereumClient(BlockchainClient, TransactionManager, ContractInteraction, 
             
             self.web3 = Web3(provider)
             
-            # Inject middleware for POA chains like Goerli if available
+            # Inject middleware for POA chains like Sepolia if available
             if HAS_POA_MIDDLEWARE:
                 self.web3.middleware_onion.inject(geth_poa_middleware, layer=0)
             

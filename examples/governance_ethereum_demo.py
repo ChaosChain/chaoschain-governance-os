@@ -52,7 +52,7 @@ def parse_args():
         '--network',
         type=str,
         default='sepolia',
-        choices=['goerli', 'sepolia'],
+        choices=['sepolia'],
         help='Ethereum testnet to use (default: sepolia)'
     )
     

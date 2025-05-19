@@ -237,7 +237,7 @@ class DemoRunner:
         # Anchor to Ethereum
         tx_hash = self.anchor_to_ethereum(action_id)
         if tx_hash:
-            print(f"Goerli tx hash: {tx_hash}")
+            print(f"Sepolia tx hash: {tx_hash}")
         
         # Check reputation
         initial_reputation = self.check_reputation()

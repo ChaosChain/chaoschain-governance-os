@@ -8,7 +8,7 @@ This document defines the Minimum Viable Product (MVP) for ChaosChain Governance
 
 ### In Scope
 
-- **Single Chain Support**: Ethereum testnet (Sepolia or Goerli) as the target chain
+- **Single Chain Support**: Ethereum testnet (Sepolia) as the target chain
 - **Parameter Tuning**: Focused on gas limit and fee market parameters
 - **Basic Monitoring**: Collection and analysis of key blockchain metrics
 - **Proposal Generation**: CrewAI-based agent for drafting parameter adjustment proposals

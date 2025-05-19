@@ -118,7 +118,6 @@ class TaskResult:
         
         base_urls = {
             "mainnet": "https://etherscan.io",
-            "goerli": "https://goerli.etherscan.io",
             "sepolia": "https://sepolia.etherscan.io"
         }
         

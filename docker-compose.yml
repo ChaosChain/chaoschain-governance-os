@@ -19,7 +19,7 @@ services:
       - POSTGRES_PORT=5432
       - POSTGRES_DB=chaoscore
       - SGX_ENCLAVE_URL=http://sgx-dev:7000
-      - ETHEREUM_PROVIDER_URL=${ETHEREUM_PROVIDER_URL:-https://goerli.infura.io/v3/your-api-key}
+      - ETHEREUM_PROVIDER_URL=${ETHEREUM_PROVIDER_URL:-https://sepolia.infura.io/v3/your-api-key}
       - ETHEREUM_CONTRACT_ADDRESS=${ETHEREUM_CONTRACT_ADDRESS:-0x1234567890123456789012345678901234567890}
       - METRICS_ENABLED=true
     volumes:

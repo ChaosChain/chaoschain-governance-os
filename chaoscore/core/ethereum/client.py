@@ -41,7 +41,7 @@ class EthereumClient:
         # Set up web3 connection
         self.w3 = Web3(Web3.HTTPProvider(self.rpc_url))
         
-        # Add middleware for POA chains (e.g., Goerli, Sepolia)
+        # Add middleware for POA chains (e.g., Sepolia)
         self.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
         
         # Load contract ABI

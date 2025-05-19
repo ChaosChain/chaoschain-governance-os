@@ -3,7 +3,7 @@
 Ethereum Client Demonstration Script
 
 This script demonstrates the basic functionality of the Ethereum client:
-1. Connecting to an Ethereum network (Goerli testnet or local fork)
+1. Connecting to an Ethereum network (Sepolia testnet or local fork)
 2. Getting basic blockchain information
 3. Creating and signing a transaction
 4. Working with smart contracts
@@ -12,7 +12,7 @@ Usage:
     python blockchain_demo.py [--local]
 
 Arguments:
-    --local: Use a local Anvil fork instead of connecting to Goerli
+    --local: Use a local Anvil fork instead of connecting to Sepolia
 """
 import os
 import sys
@@ -29,7 +29,7 @@ from chaoscore.core.ethereum.interfaces import ConnectionError, TransactionError
 
 def main():
     parser = argparse.ArgumentParser(description="Ethereum Client Demo")
-    parser.add_argument("--local", action="store_true", help="Use local Anvil fork instead of Goerli")
+    parser.add_argument("--local", action="store_true", help="Use local Anvil fork instead of Sepolia")
     args = parser.parse_args()
     
     # Initialize the Ethereum client
@@ -40,15 +40,15 @@ def main():
         endpoint_url = "http://localhost:8545"  # Anvil default
         print(f"Using local Anvil fork at {endpoint_url}")
     else:
-        # For Goerli, we need an endpoint URL
+        # For Sepolia, we need an endpoint URL
         # You can get one from Infura, Alchemy, etc.
         endpoint_url = os.environ.get("ETHEREUM_ENDPOINT_URL")
         if not endpoint_url:
             print("Error: ETHEREUM_ENDPOINT_URL environment variable not set.")
             print("Please set it to a valid Ethereum node URL (e.g., Infura, Alchemy)")
-            print("Example: export ETHEREUM_ENDPOINT_URL=https://goerli.infura.io/v3/your-api-key")
+            print("Example: export ETHEREUM_ENDPOINT_URL=https://sepolia.infura.io/v3/your-api-key")
             sys.exit(1)
-        print(f"Using Goerli testnet at {endpoint_url}")
+        print(f"Using Sepolia testnet at {endpoint_url}")
     
     try:
         # Connect to the Ethereum network
@@ -69,7 +69,7 @@ def main():
         
         # Get test account information
         # For a local Anvil fork, we can use the built-in accounts
-        # For Goerli, we need to provide a valid account
+        # For Sepolia, we need to provide a valid account
         if args.local:
             # Anvil provides accounts with test ETH
             w3 = Web3(Web3.HTTPProvider(endpoint_url))
@@ -117,7 +117,7 @@ def main():
             print(f"Status: {'Success' if receipt['status'] == 1 else 'Failed'}")
         
         else:
-            print("\nTo perform transactions on Goerli testnet, you need to provide:")
+            print("\nTo perform transactions on Sepolia testnet, you need to provide:")
             print("1. A valid Ethereum account with ETH")
             print("2. The private key for the account (which should be kept secret)")
             print("\nFor security reasons, we don't demonstrate this in the script.")

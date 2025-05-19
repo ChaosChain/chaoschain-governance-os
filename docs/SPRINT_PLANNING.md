@@ -78,7 +78,7 @@ Our strategy is to extract core components while simultaneously refining the gov
    - Log and verify actions
    - Anchor hash on Ethereum testnet
    - Distribute dummy reward
-   - **Acceptance**: Demo runs on Goerli (or fork) and outputs a passing receipt hash
+   - **Acceptance**: Demo runs on Sepolia (or fork) and outputs a passing receipt hash
 
 5. **Testing & Documentation** (8 points)
    - Unit tests for new components
