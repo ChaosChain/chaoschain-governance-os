@@ -1,4 +1,5 @@
 // Hardhat deployment script for ChaosEndpoint contract to Sepolia testnet
+require("dotenv").config();
 const fs = require('fs');
 const path = require('path');
 const hre = require("hardhat");
@@ -13,6 +14,7 @@ async function main() {
   const chaosEndpoint = await ChaosEndpoint.deploy();
   
   // Wait for deployment to finish
+  const tx = await chaosEndpoint.deploymentTransaction();
   await chaosEndpoint.waitForDeployment();
   
   // Get the contract address
@@ -27,13 +29,16 @@ async function main() {
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
+  // Get the current block number
+  const blockNumber = await hre.ethers.provider.getBlockNumber();
+
   // Save contract address to JSON file
   const deploymentData = {
     network: "sepolia",
-    contractName: "ChaosEndpoint",
     address: contractAddress,
-    deployedAt: new Date().toISOString(),
-    blockNumber: await hre.ethers.provider.getBlockNumber()
+    block: blockNumber,
+    txHash: tx.hash,
+    deployedAt: new Date().toISOString()
   };
   
   const outputPath = path.join(outputDir, 'ChaosEndpoint.json');

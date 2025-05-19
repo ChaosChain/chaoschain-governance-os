@@ -14,6 +14,9 @@ help:
 # Deploy to Sepolia testnet
 deploy-sepolia:
 	@echo "Deploying contracts to Sepolia testnet..."
+	@set -a ; source deployments/.env.staging ; set +a
+	@if [ -z "$$RPC_URL" ]; then echo "ERROR: RPC_URL is empty in .env.staging"; exit 1; fi
+	@if [ -z "$$PRIVATE_KEY" ]; then echo "ERROR: PRIVATE_KEY is empty in .env.staging"; exit 1; fi
 	npx hardhat run --network sepolia deployments/hardhat/deploy_endpoint.js
 	@echo "Deployment completed"
 
@@ -54,7 +57,7 @@ boot-staging: prepare-staging
 	python examples/sdk_gateway_demo_http.py --stage --anchor-eth --network sepolia
 	@echo "Demo completed"
 	@if [ -f tx_hash.txt ]; then \
-		echo "Transaction hash: $$(cat tx_hash.txt)"; \
+		echo "🟢 Sepolia anchor OK – tx: $$(cat tx_hash.txt)"; \
 		echo "Etherscan URL: https://sepolia.etherscan.io/tx/$$(cat tx_hash.txt)"; \
 		open "https://sepolia.etherscan.io/tx/$$(cat tx_hash.txt)" || echo "Open URL manually: https://sepolia.etherscan.io/tx/$$(cat tx_hash.txt)"; \
 	fi
