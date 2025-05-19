@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Governance Analysis Demo
+Governance Analysis Sepolia Demo
 
 This script demonstrates the governance analysis functionality
-using real Ethereum testnet data with the option to anchor results on-chain.
+using real Sepolia testnet data with the option to anchor results on-chain.
 """
 
 import os
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 def parse_args():
     """Parse command-line arguments."""
-    parser = argparse.ArgumentParser(description='Governance Analysis Demo')
+    parser = argparse.ArgumentParser(description='Governance Analysis Sepolia Demo')
     
     parser.add_argument(
         '--anchor-eth',
@@ -52,8 +52,8 @@ def parse_args():
         '--network',
         type=str,
         default='sepolia',
-        choices=['goerli', 'sepolia'],
-        help='Ethereum testnet to use (default: sepolia)'
+        choices=['sepolia'],
+        help='Ethereum testnet to use (default and only option: sepolia)'
     )
     
     parser.add_argument(
@@ -105,14 +105,14 @@ def save_results(results: List[Dict[str, Any]], output_dir: str):
             logger.info(f"Saved markdown summary to {markdown_file}")
 
 def main():
-    """Run the governance analysis demo on Ethereum testnet."""
+    """Run the governance analysis demo on Sepolia testnet."""
     args = parse_args()
     
     # Set logging level
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
     
-    logger.info("Starting Governance Analysis Demo")
+    logger.info("Starting Governance Analysis Sepolia Demo")
     logger.info(f"Network: {args.network}")
     logger.info(f"Anchor on Ethereum: {args.anchor_eth}")
     
@@ -124,7 +124,7 @@ def main():
     iterator = ProposalIterator()
     
     # Fetch proposals
-    logger.info(f"Fetching governance proposals from {args.network} testnet...")
+    logger.info("Fetching governance proposals from Sepolia testnet...")
     proposals = iterator.fetch_proposals()
     
     if not proposals:

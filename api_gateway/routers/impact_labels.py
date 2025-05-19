@@ -25,7 +25,7 @@ class ImpactLabelRequest(BaseModel):
     
     task_output: Dict[str, Any]
     task_type: str
-    network: str = "goerli"
+    network: str = "sepolia"
     anchor_ethereum: bool = True
 
 
@@ -199,7 +199,7 @@ async def generate_impact_labels(
                 "goerli": "https://goerli.etherscan.io",
                 "sepolia": "https://sepolia.etherscan.io"
             }
-            base_url = base_urls.get(network, base_urls["goerli"])
+            base_url = base_urls.get(network, base_urls["sepolia"])
             etherscan_url = f"{base_url}/tx/{receipt_tx_hash}"
         
         # Create response

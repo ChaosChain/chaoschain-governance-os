@@ -27,7 +27,7 @@ from sdk.chaoscore.client import ChaosCore
 from sdk.chaoscore.exceptions import ChaosCoreError
 
 # Constants
-GOERLI_EXPLORER_URL = "https://goerli.etherscan.io/tx/"
+SEPOLIA_EXPLORER_URL = "https://sepolia.etherscan.io/tx/"
 ENCLAVE_EMULATION = True
 
 def generate_enclave_hash(data):
@@ -43,24 +43,25 @@ def generate_enclave_hash(data):
     serialized = json.dumps(data, sort_keys=True).encode('utf-8')
     return hashlib.sha256(serialized).hexdigest()
 
-def anchor_to_ethereum(hash_value, use_staging=False):
+def anchor_to_ethereum(hash_value, use_staging=False, network="sepolia"):
     """
     Simulate anchoring a hash to Ethereum.
     In production, this would actually post to Ethereum.
     
     Args:
         hash_value: Hash to anchor
-        use_staging: Whether to use Goerli testnet
+        use_staging: Whether to use testnet
+        network: The Ethereum network to use (default: sepolia)
         
     Returns:
         Transaction hash
     """
     # In a real implementation, this would use web3.py to submit to Ethereum
     # This is a simulated version for demo purposes
-    network = "Goerli" if use_staging else "Mainnet"
+    selected_network = network.capitalize() if use_staging else "Mainnet"
     
     # Generate a realistic-looking transaction hash
-    tx_hash_seed = f"{hash_value}_{network}_{int(time.time())}"
+    tx_hash_seed = f"{hash_value}_{selected_network}_{int(time.time())}"
     tx_hash = "0x" + hashlib.sha256(tx_hash_seed.encode('utf-8')).hexdigest()[:40]
     
     # Save transaction hash to file for the Makefile to use
@@ -75,12 +76,13 @@ def main():
     """
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="ChaosCore SDK Gateway Demo")
-    parser.add_argument("--stage", action="store_true", help="Use staging environment (Goerli testnet)")
+    parser.add_argument("--stage", action="store_true", help="Use staging environment (testnet)")
     parser.add_argument("--anchor-eth", action="store_true", help="Anchor proofs to Ethereum")
+    parser.add_argument("--network", default="sepolia", choices=["sepolia", "goerli"], help="Ethereum network to use (default: sepolia)")
     args = parser.parse_args()
     
     print("=== ChaosCore SDK Gateway Demo (HTTP-first) ===\n")
-    print(f"Using {'staging' if args.stage else 'production'} environment")
+    print(f"Using {'staging' if args.stage else 'production'} environment on {args.network}")
     print(f"Ethereum anchoring: {'enabled' if args.anchor_eth else 'disabled'}")
     
     # Create a client - use a different port if in staging mode
@@ -265,13 +267,13 @@ def main():
         print("\n=== Ethereum Anchoring ===")
         print("Generating proof for outcome...")
         time.sleep(1)
-        print(f"Anchoring proof hash to {'Goerli testnet' if args.stage else 'Ethereum mainnet'}...")
+        print(f"Anchoring proof hash to {'Sepolia testnet' if args.stage else 'Ethereum mainnet'}...")
         
         # Anchor the enclave hash to Ethereum
-        tx_hash = anchor_to_ethereum(enclave_hash, use_staging=args.stage)
+        tx_hash = anchor_to_ethereum(enclave_hash, use_staging=args.stage, network=args.network)
         time.sleep(2)
         
-        explorer_url = f"{GOERLI_EXPLORER_URL}{tx_hash}" if args.stage else f"https://etherscan.io/tx/{tx_hash}"
+        explorer_url = f"{SEPOLIA_EXPLORER_URL}{tx_hash}" if args.network == "sepolia" else f"https://{'goerli' if args.network == 'goerli' else 'mainnet'}.etherscan.io/tx/{tx_hash}"
         print(f"Proof anchored successfully.")
         print(f"Transaction hash: {tx_hash}")
         print(f"View on Etherscan: {explorer_url}")
@@ -304,7 +306,7 @@ def main():
     print("Summary:")
     print(f"  • Enclave Hash: {enclave_hash}")
     if args.anchor_eth:
-        print(f"  • Ethereum TX: {tx_hash} (on {'Goerli' if args.stage else 'Mainnet'})")
+        print(f"  • Ethereum TX: {tx_hash} (on {'Sepolia' if args.network == 'sepolia' else 'Goerli' if args.network == 'goerli' else 'Mainnet'})")
         print(f"  • TX Explorer: {explorer_url}")
     print(f"  • Reputation Δ: {reputation_delta:+.4f}")
 

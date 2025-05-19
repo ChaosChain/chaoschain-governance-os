@@ -103,7 +103,7 @@ class TaskResult:
         """Add a metadata entry."""
         self.metadata[key] = value
     
-    def get_etherscan_url(self, network: str = "goerli") -> Optional[str]:
+    def get_etherscan_url(self, network: str = "sepolia") -> Optional[str]:
         """
         Get the Etherscan URL for the receipt transaction.
         
@@ -122,7 +122,7 @@ class TaskResult:
             "sepolia": "https://sepolia.etherscan.io"
         }
         
-        base_url = base_urls.get(network.lower(), base_urls["goerli"])
+        base_url = base_urls.get(network.lower(), base_urls["sepolia"])
         return f"{base_url}/tx/{self.receipt_tx_hash}"
     
     def to_dict(self) -> Dict[str, Any]:

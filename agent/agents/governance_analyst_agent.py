@@ -787,7 +787,7 @@ class GovernanceAnalystAgent:
                                 "network_congestion": 0.5,
                                 "proposal_type": "standard",
                                 "timestamp": int(time.time()),
-                                "network": "goerli"
+                                "network": "sepolia"
                             }
                         }
                     }
@@ -814,7 +814,7 @@ class GovernanceAnalystAgent:
                                 "protocol_parameters": context["blockchain_data"]["protocol_parameters"],
                                 "known_vulnerabilities": [],
                                 "timestamp": int(time.time()),
-                                "network": "goerli"
+                                "network": "sepolia"
                             }
                         }
                     }
@@ -921,7 +921,7 @@ class GovernanceAnalystAgent:
                         "protocol_parameters": blockchain_data.get("protocol_parameters", {}),
                         "known_vulnerabilities": [],  # Add empty placeholder for required field
                         "timestamp": int(time.time()),
-                        "network": "goerli"
+                        "network": "sepolia"
                     }
                 }
             }
@@ -946,7 +946,7 @@ class GovernanceAnalystAgent:
                         "network_congestion": 0.5,  # Add required field
                         "proposal_type": "standard",  # Add helpful field
                         "timestamp": int(time.time()),
-                        "network": "goerli"
+                        "network": "sepolia"
                     }
                 }
             }

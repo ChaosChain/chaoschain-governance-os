@@ -24,8 +24,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from api_gateway.client_example import ChaosCorePlatformClient
 
 # Ethereum configuration
-ETHEREUM_NETWORK = "goerli"
-ETHEREUM_RPC_URL = os.environ.get("ETHEREUM_RPC_URL", "https://goerli.infura.io/v3/your-project-id")
+ETHEREUM_NETWORK = "sepolia"
+ETHEREUM_RPC_URL = os.environ.get("ETHEREUM_RPC_URL", "https://sepolia.infura.io/v3/your-project-id")
 ETHEREUM_WALLET_KEY = os.environ.get("ETHEREUM_WALLET_KEY", None)
 
 # SGX Enclave configuration

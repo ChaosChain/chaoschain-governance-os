@@ -1,8 +1,8 @@
 """
-Blockchain context fetcher for the Goerli testnet.
+Blockchain context fetcher for the Ethereum testnet.
 
 This module provides functionality to fetch blockchain data such as recent blocks,
-governance proposals, and gas prices from the Goerli Ethereum testnet.
+governance proposals, and gas prices from the Ethereum testnet.
 """
 
 import os
@@ -47,34 +47,37 @@ class ContextFetcher(ABC):
         pass
 
 
-class GoerliContextFetcher(ContextFetcher):
+class EthereumContextFetcher(ContextFetcher):
     """
-    Context fetcher implementation for the Goerli Ethereum testnet.
+    Context fetcher implementation for the Ethereum testnet.
     
-    This class provides methods to fetch real blockchain data from the Goerli testnet,
+    This class provides methods to fetch real blockchain data from the Ethereum testnet,
     including recent blocks, governance proposals, and gas price statistics.
     """
     
-    def __init__(self, provider_url: Optional[str] = None):
+    def __init__(self, provider_url: Optional[str] = None, chain_id: int = 11155111):
         """
-        Initialize the GoerliContextFetcher.
+        Initialize the EthereumContextFetcher.
         
         Args:
             provider_url: URL of the Ethereum node to connect to. If None, uses
                          the ETHEREUM_PROVIDER_URL environment variable or a default value.
+            chain_id: Chain ID for the Ethereum network. Default is 11155111 (Sepolia).
         """
         if not WEB3_AVAILABLE:
             raise ImportError("Web3 library is required but not available. Install with 'pip install web3'.")
         
         self.provider_url = provider_url or os.environ.get(
             'ETHEREUM_PROVIDER_URL', 
-            'https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161'  # Public Infura endpoint
+            'https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161'  # Public Infura endpoint
         )
+        
+        self.chain_id = chain_id
         
         # Set up the Web3 connection
         self.web3 = Web3(Web3.HTTPProvider(self.provider_url))
         
-        # Apply middleware for PoA networks like Goerli
+        # Apply middleware for PoA networks like Sepolia
         self.web3.middleware_onion.inject(geth_poa_middleware, layer=0)
         
         # Check connection
@@ -119,7 +122,7 @@ class GoerliContextFetcher(ContextFetcher):
             }
         ]
         
-        # Known governance contracts on Goerli
+        # Known governance contracts on the network
         self.governance_contracts = [
             # Example governance contract addresses - should be replaced with real ones
             "0x5991A2dF15A8F6A256D3Ec51E99254Cd3fb576A9",  # Placeholder - replace with real one
@@ -127,7 +130,7 @@ class GoerliContextFetcher(ContextFetcher):
     
     def get_recent_blocks(self, n: int = 128) -> List[Dict[str, Any]]:
         """
-        Fetch the most recent n blocks from the Goerli testnet.
+        Fetch the most recent n blocks from the Ethereum testnet.
         
         Args:
             n: Number of recent blocks to fetch
@@ -135,7 +138,7 @@ class GoerliContextFetcher(ContextFetcher):
         Returns:
             List of block data objects
         """
-        logger.info(f"Fetching {n} recent blocks from Goerli")
+        logger.info(f"Fetching {n} recent blocks from Ethereum network")
         
         latest_block = self.web3.eth.block_number
         blocks = []
@@ -168,12 +171,12 @@ class GoerliContextFetcher(ContextFetcher):
     
     def get_active_governor_proposals(self) -> List[Dict[str, Any]]:
         """
-        Fetch active governance proposals from known governance contracts on Goerli.
+        Fetch active governance proposals from known governance contracts on the Ethereum network.
         
         Returns:
             List of active governance proposals
         """
-        logger.info("Fetching active governance proposals from Goerli")
+        logger.info("Fetching active governance proposals from Ethereum network")
         
         active_proposals = []
         
@@ -255,7 +258,7 @@ class GoerliContextFetcher(ContextFetcher):
     
     def get_gas_price_stats(self, block_count: int = 100) -> Dict[str, Any]:
         """
-        Calculate gas price statistics from recent blocks on Goerli.
+        Calculate gas price statistics from recent blocks on the Ethereum network.
         
         Args:
             block_count: Number of recent blocks to analyze
@@ -377,10 +380,10 @@ def get_context_fetcher() -> ContextFetcher:
         logger.info("Using mock context fetcher")
         return MockContextFetcher()
     else:
-        # Use real Goerli fetcher if Web3 is available
+        # Use real Ethereum fetcher if Web3 is available
         if WEB3_AVAILABLE:
-            logger.info("Using Goerli context fetcher")
-            return GoerliContextFetcher()
+            logger.info("Using Ethereum context fetcher")
+            return EthereumContextFetcher()
         else:
             # Fall back to mock if Web3 is not available
             logger.warning("Web3 not available, falling back to mock context fetcher")

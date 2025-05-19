@@ -20,7 +20,7 @@ class ProposalIterator:
     """
     Iterates through governance proposals and executes analysis tasks on each one.
     
-    This class fetches pending proposals from the Goerli testnet and runs
+    This class fetches pending proposals from the Sepolia testnet and runs
     security and MEV analysis on each proposal.
     """
     
@@ -224,7 +224,7 @@ class ProposalIterator:
                 "protocol_parameters": {},
                 "known_vulnerabilities": [],
                 "timestamp": int(time.time()),
-                "network": "goerli"
+                "network": "sepolia"
             },
             "defi": {
                 "trading_pairs": [],

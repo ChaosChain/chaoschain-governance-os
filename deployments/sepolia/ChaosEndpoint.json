@@ -1,0 +1,8 @@
+{
+  "network": "sepolia",
+  "contractName": "ChaosEndpoint",
+  "address": "0x0000000000000000000000000000000000000000",
+  "deployedAt": "YYYY-MM-DDThh:mm:ss.sssZ",
+  "blockNumber": 0,
+  "comment": "This is a placeholder file. Run 'make deploy-sepolia' to deploy the actual contract."
+} 

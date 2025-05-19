@@ -103,7 +103,7 @@ def create_adapters(use_ethereum=False, use_staging=False):
         if use_staging:
             # Use the staging contract address
             contract_address = os.environ.get("ETHEREUM_CONTRACT_ADDRESS", "0x1234567890123456789012345678901234567890")
-            provider_url = os.environ.get("ETHEREUM_PROVIDER_URL", "https://goerli.infura.io/v3/your-api-key")
+            provider_url = os.environ.get("ETHEREUM_PROVIDER_URL", "https://sepolia.infura.io/v3/your-api-key")
             print(f"Using Ethereum anchoring with provider: {provider_url}")
             print(f"Contract address: {contract_address}")
         else:
