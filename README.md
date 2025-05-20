@@ -153,6 +153,32 @@ chaoschain-governance-os/
 
 ## Recent Developments
 
+### Ethereum Transaction Anchoring
+
+- Implemented real transaction anchoring on Sepolia testnet
+- Actions performed by agents are now cryptographically anchored to the blockchain
+- Added support for agent registration on-chain
+- Transaction hashes are stored and can be verified on Etherscan
+- Demo available to showcase the full flow from agent registration to anchoring
+
+To run the Ethereum anchoring demo:
+
+```bash
+# Clone and set up the repository
+git clone https://github.com/chaoschain/chaoschain-governance-os.git
+cd chaoschain-governance-os
+
+# Copy example environment file and update with your keys
+cp env.example .env
+# Edit .env with your Ethereum provider URL and private key
+
+# Build and run the services
+docker-compose -f docker-compose.example.yml up -d
+
+# Run the demo (requires Sepolia ETH in your wallet)
+make boot-sepolia
+```
+
 ### Sprint 7: Governance Agent Context Fetching
 
 - Implemented `EthereumContextFetcher` for real blockchain data integration

@@ -92,3 +92,29 @@ docs/sprint_backlog.md
 Chaos_lite.md
 IMPLEMENTATION_PLAN.md
 deployments/.env.staging
+ImplementationPlan.md
+
+# Sensitive files containing keys
+docker-compose.sepolia.yml
+docker-compose.staging.yml
+*private_key*
+*.key
+*.pem
+
+# Commit scripts
+commit_fix_sepolia.sh
+commit-sepolia-anchoring.sh
+debug_jwt_issue.sh
+commit_changes.sh
+fix_jwt_auth.sh
+
+# Environment files
+deployments/.env.*
+.env*
+!.env.example
+
+# Temporary files
+tx_hash.txt
+tmp_cmd.txt
+chaoscore_test.db
+*.bak
